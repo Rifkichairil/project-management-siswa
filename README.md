@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🧑‍🏫 Dashboard Les Private Bimbelku
 
 Halo! 👋  
@@ -33,7 +32,6 @@ Tujuannya untuk membantu pengelolaan data yang sebelumnya masih dilakukan secara
 - Hitung otomatis sisa kelas berdasarkan kuota.  
 - Export laporan ke PDF atau Excel.
 
----
 
 ## 🧩 Sistem Kuota Kelas
 
@@ -41,7 +39,6 @@ Sistem pembelian kelas berdasarkan **paket kuota**, misalnya:
 - Paket 10 kelas  
 - Paket 20 kelas  
 - Paket 30 kelas  
-=======
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
@@ -101,4 +98,3 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
->>>>>>> de22d86 (Initial commit: setup Laravel + Filament project)
