@@ -7,29 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Teacher extends Model
 {
+    /** @use HasFactory<\Database\Factories\TeacherFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'specialization',
-        'phone',
-        'address',
-    ];
+    protected $fillable = ['user_id','expertise','curriculum'];
 
-    // === RELATIONS ===
     public function user()
     {
-        return $this->belongsTo(User::class);
+    return $this->belongsTo(User::class);
     }
+
 
     public function classSchedules()
     {
-        return $this->hasMany(ClassSchedule::class);
+    return $this->hasMany(ClassSchedule::class);
     }
-
-    public function classReports()
-    {
-        return $this->hasMany(ClassReport::class, 'created_by');
-    }
-
 }

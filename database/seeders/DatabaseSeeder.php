@@ -8,12 +8,10 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Curriculum;
-use App\Models\ClassPackage;
 use App\Models\StudentPackage;
 use App\Models\ClassSchedule;
-use App\Models\StudentClass;
 use App\Models\ClassReport;
-use App\Models\Payment;
+use App\Models\Package;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,36 +22,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // USERS
+        User::factory()->count(10)->create();
 
-       // Users
-       User::factory()->count(5)->create();
 
-       // Teachers
-       Teacher::factory()->count(5)->create();
+        // CURRICULUMS
+        Curriculum::factory()->count(10)->create();
 
-       // Students
-       Student::factory()->count(5)->create();
 
-       // Curriculums
-       Curriculum::factory()->count(5)->create();
+        // TEACHERS
+        Teacher::factory()->count(10)->create();
 
-       // Packages
-       ClassPackage::factory()->count(5)->create();
 
-       // Student Packages
-       StudentPackage::factory()->count(5)->create();
+        // STUDENTS
+        Student::factory()->count(10)->create();
 
-       // Schedules
-       ClassSchedule::factory()->count(5)->create();
 
-       // Student Classes
-       StudentClass::factory()->count(5)->create();
+        // PACKAGES
+        Package::factory()->count(10)->create();
 
-       // Reports
-       ClassReport::factory()->count(5)->create();
 
-       // Payments
-       Payment::factory()->count(5)->create();
+        // STUDENT PACKAGES
+        StudentPackage::factory()->count(10)->create();
+
+
+        // CLASS SCHEDULES
+        ClassSchedule::factory()->count(10)->create();
+
+
+        // CLASS REPORTS
+        ClassReport::factory()->count(10)->create();
     }
 }

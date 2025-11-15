@@ -2,8 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\ClassPackage;
-use App\Models\Student;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,13 +16,15 @@ class StudentPackageFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'student_id' => Student::factory(),
-            'package_id' => ClassPackage::factory(),
-            'start_date' => now()->subDays(fake()->numberBetween(1, 30)),
-            'remaining_sessions' => fake()->numberBetween(1, 10),
-            'status' => fake()->randomElement(['active', 'finished', 'expired']),
-        ];
+       $package = \App\Models\Package::factory()->create();
 
+        return [
+            'student_id' => \App\Models\Student::factory(),
+            'package_id' => $package->id,
+            'start_date' => now(),
+            'end_date' => $package->type === 'monthly' ? now()->addMonth() : null,
+            'total_quota' => $package->quota_classes,
+            'remaining_quota' => $package->quota_classes,
+        ];
     }
 }

@@ -7,15 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Curriculum extends Model
 {
-    //
+    /** @use HasFactory<\Database\Factories\CurriculumFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'description'];
-
-    // === RELATIONS ===
-    public function classSchedules()
-    {
-        return $this->hasMany(ClassSchedule::class);
-    }
+    protected $table = 'curriculums';
+    protected $fillable = ['name','description'];
 
 }

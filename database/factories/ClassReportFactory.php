@@ -2,8 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\StudentClass;
-use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,11 +17,11 @@ class ClassReportFactory extends Factory
     public function definition(): array
     {
         return [
-            'student_class_id' => StudentClass::factory(),
-            'notes' => fake()->sentence(),
-            'score' => fake()->numberBetween(60, 100),
-            'created_by' => Teacher::factory(),
+            'class_schedule_id' => \App\Models\ClassSchedule::factory(),
+            'topic' => $this->faker->sentence(),
+            'progress' => $this->faker->sentence(),
+            'notes' => $this->faker->paragraph(),
+            'teacher_feedback' => $this->faker->sentence(),
         ];
-
     }
 }

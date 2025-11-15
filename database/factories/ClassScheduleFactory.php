@@ -2,8 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Curriculum;
-use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,12 +17,12 @@ class ClassScheduleFactory extends Factory
     public function definition(): array
     {
         return [
-            'teacher_id' => Teacher::factory(),
-            'curriculum_id' => Curriculum::factory(),
-            'date' => fake()->dateTimeBetween('-1 week', '+1 week'),
-            'duration' => 60,
-            'location' => fake()->randomElement(['Online', 'Jakarta Selatan', 'Depok', 'BSD']),
+            'student_id' => \App\Models\Student::factory(),
+            'teacher_id' => \App\Models\Teacher::factory(),
+            'date' => $this->faker->date(),
+            'time_start' => '10:00',
+            'time_end' => '11:00',
+            'status' => $this->faker->randomElement(['scheduled', 'completed', 'cancelled']),
         ];
-
     }
 }

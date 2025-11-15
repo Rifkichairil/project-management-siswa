@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('student_packages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->constrained('class_packages')->cascadeOnDelete();
-            $table->date('start_date')->nullable();
-            $table->integer('remaining_sessions');
-            $table->enum('status', ['active', 'finished', 'expired'])->default('active');
+            $table->foreignId('student_id')->constrained();
+            $table->foreignId('package_id')->constrained();
+            $table->date('start_date');
+            $table->date('end_date')->nullable();
+            $table->integer('total_quota')->nullable();
+            $table->integer('remaining_quota')->nullable();
             $table->timestamps();
         });
-
     }
 
     /**

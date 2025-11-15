@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('class_packages', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->integer('total_sessions');
-            $table->decimal('price', 10, 2)->default(0);
-            $table->timestamps();
-        });
-
+      Schema::create('packages', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->enum('type', ['quota', 'monthly']);
+        $table->integer('quota_classes')->nullable();
+        $table->integer('price');
+        $table->timestamps();
+    });
     }
 
     /**
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('class_packages');
+        Schema::dropIfExists('packages');
     }
 };

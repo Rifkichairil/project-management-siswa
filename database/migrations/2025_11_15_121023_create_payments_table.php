@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('student_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->constrained('class_packages')->cascadeOnDelete();
-            $table->decimal('amount', 10, 2);
-            $table->date('date')->nullable();
-            $table->enum('status', ['paid', 'pending'])->default('pending');
+            $table->foreignId('student_package_id')->constrained();
+            $table->integer('amount');
+            $table->enum('status', ['pending', 'paid', 'failed'])->default('pending');
+            $table->enum('method', ['transfer', 'cash'])->nullable();
+            $table->string('proof')->nullable(); // bukti pembayaran (foto)
             $table->timestamps();
         });
-
     }
 
     /**

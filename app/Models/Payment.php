@@ -7,26 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
-    //
     use HasFactory;
 
     protected $fillable = [
-        'student_id',
-        'package_id',
+        'student_package_id',
         'amount',
-        'date',
         'status',
+        'method',
+        'proof'
     ];
 
-    // === RELATIONS ===
-    public function student()
+    /**
+     * Relasi ke StudentPackage
+     */
+    public function studentPackage()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(StudentPackage::class);
     }
 
-    public function package()
+    /**
+     * Helper: Cek apakah pembayaran sudah lunas
+     */
+    public function isPaid()
     {
-        return $this->belongsTo(ClassPackage::class, 'package_id');
+        return $this->status === 'paid';
     }
-
 }

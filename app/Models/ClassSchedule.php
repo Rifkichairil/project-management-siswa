@@ -7,31 +7,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class ClassSchedule extends Model
 {
-    //
+    /** @use HasFactory<\Database\Factories\ClassScheduleFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'teacher_id',
-        'curriculum_id',
-        'date',
-        'duration',
-        'location',
-    ];
+    protected $fillable = ['student_id','teacher_id','date','time_start','time_end','status'];
 
-    // === RELATIONS ===
+    public function student()
+    {
+    return $this->belongsTo(Student::class);
+    }
+
+
     public function teacher()
     {
-        return $this->belongsTo(Teacher::class);
+    return $this->belongsTo(Teacher::class);
     }
 
-    public function curriculum()
+
+    public function classReport()
     {
-        return $this->belongsTo(Curriculum::class);
+    return $this->hasOne(ClassReport::class);
     }
-
-    public function studentClasses()
-    {
-        return $this->hasMany(StudentClass::class, 'schedule_id');
-    }
-
 }

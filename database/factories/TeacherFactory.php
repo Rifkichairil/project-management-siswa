@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,10 +17,9 @@ class TeacherFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(['role' => 'teacher']),
-            'specialization' => fake()->randomElement(['Math', 'Physics', 'English', 'Biology']),
-            'phone' => fake()->phoneNumber(),
-            'address' => fake()->address(),
+            'user_id' => \App\Models\User::factory(),
+            'expertise' => $this->faker->randomElement(['Math', 'Physics', 'English']),
+            'curriculum' => $this->faker->randomElement(['IB', 'IGCSE', 'National']),
         ];
     }
 }

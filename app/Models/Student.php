@@ -7,35 +7,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-    //
+    /** @use HasFactory<\Database\Factories\StudentFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'school',
-        'grade',
-        'phone',
-    ];
+    protected $fillable = ['user_id','school','grade','parent_name','parent_contact'];
 
-    // === RELATIONS ===
     public function user()
     {
-        return $this->belongsTo(User::class);
+    return $this->belongsTo(User::class);
     }
 
-    public function packages()
+
+    public function studentPackages()
     {
-        return $this->hasMany(StudentPackage::class);
+    return $this->hasMany(StudentPackage::class);
     }
 
-    public function studentClasses()
+
+    public function classSchedules()
     {
-        return $this->hasMany(StudentClass::class);
+    return $this->hasMany(ClassSchedule::class);
     }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
-    }
-
 }

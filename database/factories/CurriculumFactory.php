@@ -17,8 +17,8 @@ class CurriculumFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->randomElement(['Math', 'Science', 'English', 'History', 'Programming']),
-            'description' => fake()->sentence(8),
+            'name' => $this->faker->randomElement(['IGCSE', 'National', 'IB']),
+            'description' => $this->faker->sentence(),
         ];
     }
 }

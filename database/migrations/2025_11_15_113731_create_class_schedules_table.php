@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('class_schedules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('teacher_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('curriculum_id')->constrained('curricula')->onDelete('cascade');
-            $table->dateTime('date');
-            $table->integer('duration')->default(60);
-            $table->string('location')->nullable();
+            $table->foreignId('student_id')->constrained();
+            $table->foreignId('teacher_id')->constrained();
+            $table->date('date');
+            $table->time('time_start');
+            $table->time('time_end');
+            $table->enum('status', ['scheduled', 'completed', 'cancelled']);
             $table->timestamps();
         });
-
     }
 
     /**
