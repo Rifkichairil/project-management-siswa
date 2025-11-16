@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\StudentPackageResource\Pages;
 use App\Filament\Resources\StudentPackageResource\RelationManagers;
+use App\Models\Package;
 use App\Models\StudentPackage;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -12,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Validation\ValidationException;
 
 class StudentPackageResource extends Resource
 {
@@ -32,16 +34,71 @@ class StudentPackageResource extends Resource
             Forms\Components\Select::make('package_id')
                 ->relationship('package', 'name')
                 ->required()
-                ->searchable(),
+                ->searchable()
+                ->reactive()
+                ->afterStateUpdated(function ($state, callable $set) {
+                    if (!$state) {
+                        return;
+                    }
+
+                    // Ambil data package
+                    $package = \App\Models\Package::find($state);
+
+                    if (!$package) {
+                        return;
+                    }
+
+                    if ($package->type === 'quota') {
+                        // auto ambil quota
+                        $set('total_quota', $package->quota_classes);
+                        $set('type', true);    // tanda untuk disabled di field
+                    } else {
+                        // monthly → manual input
+                        $set('total_quota', null);
+                        $set('type', false);
+                    }
+                })
+                ->rules([
+                    function ($get) {
+                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                            $studentId = $get('student_id');
+                            $packageId = $value;
+
+                            // Pastikan studentId sudah dipilih
+                            if (!$studentId || !$packageId) {
+                                return;
+                            }
+
+                            $newPackageType = \App\Models\Package::find($packageId)?->type;
+
+                            if (!$newPackageType) {
+                                return;
+                            }
+
+                            $hasExistingPackage = \App\Models\StudentPackage::where('student_id', $studentId)
+                                ->whereHas('package', function ($query) use ($newPackageType) {
+                                    $query->where('type', $newPackageType);
+                                })
+                                ->exists();
+
+                            if ($hasExistingPackage) {
+                                $typeName = $newPackageType === 'quota' ? 'Quota' : 'Monthly';
+                                $fail("Student ini sudah memiliki package dengan tipe {$typeName}.");
+                            }
+                        };
+                    },
+                ]),
 
             Forms\Components\DatePicker::make('start_date')
                 ->required(),
 
             Forms\Components\DatePicker::make('end_date'),
 
+            Forms\Components\Hidden::make('type')->default(false),
+
             Forms\Components\TextInput::make('total_quota')
                 ->numeric()
-                ->disabled()       // user tidak bisa ubah
+                ->disabled(fn ($get) => $get('type') === true)
                 ->dehydrated(true)    // tetap dikirim ke server
                 ->minValue(0),
 

@@ -22,7 +22,7 @@ class ListStudentPackages extends ListRecords
             // Gunakan CreateAction untuk menampilkan formulir dalam modal
             CreateAction::make()
                 // Opsi tambahan (opsional):
-                ->modalWidth('xl')
+                ->modalWidth('5xl')
         ];
     }
 
