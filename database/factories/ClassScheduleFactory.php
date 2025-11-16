@@ -17,8 +17,9 @@ class ClassScheduleFactory extends Factory
     public function definition(): array
     {
         return [
-            'student_id' => \App\Models\Student::factory(),
-            'teacher_id' => \App\Models\Teacher::factory(),
+            'student_id' => \App\Models\Student::inRandomOrder()->value('id'),
+            'teacher_id' => \App\Models\Teacher::inRandomOrder()->value('id'),
+            'subject_id' => \App\Models\Subject::inRandomOrder()->value('id'),
             'date' => $this->faker->date(),
             'time_start' => '10:00',
             'time_end' => '11:00',

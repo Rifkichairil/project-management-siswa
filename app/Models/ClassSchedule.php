@@ -10,13 +10,17 @@ class ClassSchedule extends Model
     /** @use HasFactory<\Database\Factories\ClassScheduleFactory> */
     use HasFactory;
 
-    protected $fillable = ['student_id','teacher_id','date','time_start','time_end','status'];
+    protected $fillable = ['student_id','teacher_id', 'subject_id','date','time_start','time_end','status'];
 
     public function student()
     {
     return $this->belongsTo(Student::class);
     }
 
+    public function subject()
+    {
+    return $this->belongsTo(Subject::class);
+    }
 
     public function teacher()
     {
