@@ -6,6 +6,7 @@ use App\Filament\Resources\StudentPackageResource\Pages;
 use App\Filament\Resources\StudentPackageResource\RelationManagers;
 use App\Models\Package;
 use App\Models\StudentPackage;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -36,7 +37,7 @@ class StudentPackageResource extends Resource
                 ->required()
                 ->searchable()
                 ->reactive()
-                ->afterStateUpdated(function ($state, callable $set) {
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
                     if (!$state) {
                         return;
                     }
@@ -50,12 +51,27 @@ class StudentPackageResource extends Resource
 
                     if ($package->type === 'quota') {
                         // auto ambil quota
+                        $quotaValue = $package->quota_classes;
+
                         $set('total_quota', $package->quota_classes);
                         $set('type', true);    // tanda untuk disabled di field
+                        $set('remaining_quota', $package->quota_classes);
+                        $set('end_date', null); // Kosongkan end_date jika tipe quota
                     } else {
                         // monthly → manual input
                         $set('total_quota', null);
                         $set('type', false);
+
+                        // Jika sudah ada start_date, hitung end_date-nya
+                        if ($get('start_date')) {
+                            try {
+                                $startDate = Carbon::parse($get('start_date'));
+                                $endDate = $startDate->copy()->addMonth(); // Tambah 1 bulan
+                                $set('end_date', $endDate->format('Y-m-d'));
+                            } catch (\Exception $e) {
+                                // Ignore error
+                            }
+                        }
                     }
                 })
                 ->rules([
@@ -89,11 +105,46 @@ class StudentPackageResource extends Resource
                     },
                 ]),
 
-            Forms\Components\DatePicker::make('start_date')
-                ->required(),
+           Forms\Components\DatePicker::make('start_date')
+                ->required()
+                ->reactive() // WAJIB agar end_date merespons perubahan ini
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    if (!$state) {
+                        $set('end_date', null); // Kosongkan jika start_date dihapus
+                        return;
+                    }
 
-            Forms\Components\DatePicker::make('end_date'),
+                    $packageId = $get('package_id');
 
+                    if (!$packageId) {
+                        return;
+                    }
+
+                    $package = \App\Models\Package::find($packageId);
+
+                    // Logika Auto-Fill end_date
+                    if ($package && $package->type === 'monthly') {
+                        try {
+                            $startDate = Carbon::parse($state);
+                            $endDate = $startDate->copy()->addMonth(); // Tambah 1 bulan
+                            $set('end_date', $endDate->format('Y-m-d'));
+                        } catch (\Exception $e) {
+                            $set('end_date', null);
+                        }
+                    } else {
+                        // Jika quota, biarkan end_date null
+                        $set('end_date', null);
+                    }
+                }),
+
+            Forms\Components\DatePicker::make('end_date')
+                ->nullable()
+                // Disabled jika package_id terisi dan type-nya monthly
+                ->disabled(fn ($get) =>
+                    ($packageId = $get('package_id')) &&
+                    ($package = \App\Models\Package::find($packageId)) &&
+                    $package->type === 'monthly'
+                ),
             Forms\Components\Hidden::make('type')->default(false),
 
             Forms\Components\TextInput::make('total_quota')
