@@ -32,6 +32,21 @@ class EditStudent extends EditRecord
         return $data;
     }
 
+    protected function fillForm(): void
+    {
+        $student = $this->record;
+
+        $this->form->fill([
+            'name'          => $student->user->name,
+            'email'         => $student->user->email,
+            'password'      => '',
+            'school'        => $student->school,
+            'grade'         => $student->grade,
+            'parent_name'   => $student->parent_name,
+            'parent_contact'=> $student->parent_contact,
+        ]);
+    }
+
     protected function afterUpdate(): void
     {
         Notification::make()

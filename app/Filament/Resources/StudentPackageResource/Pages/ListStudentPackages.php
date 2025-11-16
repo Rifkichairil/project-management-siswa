@@ -6,6 +6,7 @@ use App\Filament\Resources\StudentPackageResource;
 use App\Models\StudentPackage;
 use Filament\Actions;
 use Filament\Resources\Components\Tab;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -18,7 +19,10 @@ class ListStudentPackages extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            // Gunakan CreateAction untuk menampilkan formulir dalam modal
+            CreateAction::make()
+                // Opsi tambahan (opsional):
+                ->modalWidth('xl')
         ];
     }
 
@@ -49,5 +53,4 @@ class ListStudentPackages extends ListRecords
                 ),
         ];
     }
-
 }

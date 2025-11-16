@@ -46,7 +46,7 @@ class TeacherResource extends Resource
                             ->required()
                             ->visibleOn('create'), // ⬅⬅⬅ penting!
 
-                    ]),
+                    ])->columns(3), // <<<<<<<<<< GRID 2 KOLOM
 
                 // Teacher fields
                 Forms\Components\Section::make('Teacher Details')
@@ -56,7 +56,7 @@ class TeacherResource extends Resource
 
                         Forms\Components\TextInput::make('curriculum')
                             ->required(),
-                    ]),
+                    ])->columns(2),
             ]);
     }
 

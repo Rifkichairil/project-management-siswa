@@ -41,10 +41,14 @@ class StudentPackageResource extends Resource
 
             Forms\Components\TextInput::make('total_quota')
                 ->numeric()
+                ->disabled()       // user tidak bisa ubah
+                ->dehydrated(true)    // tetap dikirim ke server
                 ->minValue(0),
 
             Forms\Components\TextInput::make('remaining_quota')
                 ->numeric()
+                ->disabled()       // user tidak bisa ubah
+                ->dehydrated(true)    // tetap dikirim ke server
                 ->minValue(0),
         ]);
     }
@@ -108,7 +112,12 @@ class StudentPackageResource extends Resource
                     ->falseLabel('Only Ended'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\EditAction::make(),
+                 Tables\Actions\EditAction::make()
+                    ->mutateRecordDataUsing(function (array $data): array {
+                        return $data;
+                    })
+                    ->modalWidth('5xl'),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
@@ -126,8 +135,8 @@ class StudentPackageResource extends Resource
     {
         return [
             'index' => Pages\ListStudentPackages::route('/'),
-            'create' => Pages\CreateStudentPackage::route('/create'),
-            'edit' => Pages\EditStudentPackage::route('/{record}/edit'),
+            // 'create' => Pages\CreateStudentPackage::route('/create'),
+            // 'edit' => Pages\EditStudentPackage::route('/{record}/edit'),
         ];
     }
 }

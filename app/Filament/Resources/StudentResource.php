@@ -28,9 +28,9 @@ class StudentResource extends Resource
         return $form
            ->schema([
                 // User fields (for auto create)
-                Forms\Components\Section::make('User Account')
+                Forms\Components\Section::make('Users Account')
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                       Forms\Components\TextInput::make('name')
                             ->label('Name')
                             ->required(),
 
