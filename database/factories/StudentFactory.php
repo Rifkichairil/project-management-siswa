@@ -17,7 +17,7 @@ class StudentFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => \App\Models\User::inRandomOrder()->value('id'),
             'school' => $this->faker->company() . ' School',
             'grade' => $this->faker->randomElement(['7', '8', '9', '10', '11', '12']),
             'parent_name' => $this->faker->name(),

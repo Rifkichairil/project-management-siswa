@@ -17,7 +17,7 @@ class TeacherFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => \App\Models\User::inRandomOrder()->value('id'),
             'expertise' => $this->faker->randomElement(['Math', 'Physics', 'English']),
             'curriculum' => $this->faker->randomElement(['IB', 'IGCSE', 'National']),
         ];

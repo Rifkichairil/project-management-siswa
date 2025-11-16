@@ -16,10 +16,10 @@ class StudentPackageFactory extends Factory
      */
     public function definition(): array
     {
-       $package = \App\Models\Package::factory()->create();
+       $package = \App\Models\Package::inRandomOrder()->first();
 
         return [
-            'student_id' => \App\Models\Student::factory(),
+            'student_id' => \App\Models\Student::inRandomOrder()->value('id'),
             'package_id' => $package->id,
             'start_date' => now(),
             'end_date' => $package->type === 'monthly' ? now()->addMonth() : null,

@@ -17,7 +17,8 @@ class ClassReportFactory extends Factory
     public function definition(): array
     {
         return [
-            'class_schedule_id' => \App\Models\ClassSchedule::factory(),
+            // 'class_schedule_id' => \App\Models\ClassSchedule::inRandomOrder()->value('id'),
+            'class_schedule_id' => \App\Models\ClassSchedule::inRandomOrder()->value('id'),
             'topic' => $this->faker->sentence(),
             'progress' => $this->faker->sentence(),
             'notes' => $this->faker->paragraph(),

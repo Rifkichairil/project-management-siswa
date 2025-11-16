@@ -17,13 +17,27 @@ class PackageFactory extends Factory
     public function definition(): array
     {
         $type = $this->faker->randomElement(['quota', 'monthly']);
-        return [
-            'name' => $type === 'quota'
-                ? $this->faker->randomElement(['10 Classes', '20 Classes', '30 Classes'])
-                : 'Monthly Unlimited',
 
-            'type' => $type,
-            'quota_classes' => $type === 'quota' ? $this->faker->randomElement([10, 20, 30]) : null,
+        if ($type === 'quota') {
+            $quotaOptions = [10, 20, 30];
+            $quota = $this->faker->randomElement($quotaOptions);
+
+            return [
+                'name' => "{$quota} Classes",
+                'type' => 'quota',
+                'quota_classes' => $quota,
+                'price' => $this->faker->numberBetween(500000, 2000000),
+            ];
+        }
+
+        // type = monthly
+        $monthlyOptions = ['4 Meetings', '6 Meetings', '8 Meetings', '12 Meetings', 'Unlimited'];
+        $meetingName = $this->faker->randomElement($monthlyOptions);
+
+        return [
+            'name' => "Monthly {$meetingName}",
+            'type' => 'monthly',
+            'quota_classes' => null,
             'price' => $this->faker->numberBetween(500000, 2000000),
         ];
     }

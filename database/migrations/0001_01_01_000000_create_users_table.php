@@ -42,8 +42,8 @@ return new class extends Migration
 
         DB::table('users')->insert([
             'name' => 'SuperAdmin',
-            'email' => 'superadmin@example.com',
-            'password' => Hash::make('superadmin123'), // kamu bisa ganti sendiri
+            'email' => 'superadmin@gmail.com',
+            'password' => Hash::make('admin'), // kamu bisa ganti sendiri
             'role' => 'superadmin',
             'isActive' => true,
             'email_verified_at' => now(),
