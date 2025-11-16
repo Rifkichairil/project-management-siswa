@@ -14,13 +14,12 @@ class StudentPackage extends Model
 
     public function student()
     {
-    return $this->belongsTo(Student::class);
+        return $this->belongsTo(Student::class);
     }
-
 
     public function package()
     {
-    return $this->belongsTo(Package::class);
+        return $this->belongsTo(Package::class);
     }
 
     public function payments()
