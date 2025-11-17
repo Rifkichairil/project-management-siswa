@@ -28,38 +28,98 @@ class StudentPackageResource extends Resource
     protected static ?string $navigationGroup = 'Package';
     protected static ?int $navigationSort = 3;
 
-public static function form(Form $form): Form
+
+    public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Select::make('student_id')
                     ->label('Student')
-                    ->relationship('student.user', 'name') // 'student' = nama relasi di model StudentPackage
+                    ->relationship('student.user', 'name')
                     ->searchable()
                     ->required(),
 
                 Select::make('package_id')
-                    ->label('Package')
-                    ->relationship('package', 'name') // 'package' = nama relasi di model StudentPackage
+                    ->relationship('package', 'name')
+                    ->required()
                     ->searchable()
-                    ->required(),
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set, $get) {
+                        $package = \App\Models\Package::find($state);
+                        if (!$package) return;
+
+                        if ($package->type === 'monthly') {
+                            // Jika start_date belum ada, set sekarang
+                            $startDate = $get('start_date') ?: now()->format('Y-m-d');
+                            $set('start_date', $startDate);
+                            // end_date = start_date + 1 bulan
+                            $set('end_date', Carbon::parse($startDate)->addMonth()->format('Y-m-d'));
+                            // tampilkan total_quota
+                            $set('show_total_quota', true);
+                        } else {
+                            // Hide total_quota untuk type selain monthly
+                            $set('show_total_quota', false);
+                            // Bisa set end_date default untuk quota (misal sama dengan start_date)
+                            $set('end_date', null);
+                        }
+                    })
+                    ->rules([
+                        function ($get) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                $studentId = $get('student_id');
+                                $packageId = $value;
+
+                                if (!$studentId || !$packageId) return;
+
+                                $newPackage = \App\Models\Package::find($packageId);
+                                if (!$newPackage) return;
+
+                                $newPackageType = $newPackage->type;
+
+                                $hasExistingPackage = \App\Models\StudentPackage::where('student_id', $studentId)
+                                    ->whereHas('package', function (Builder $query) use ($newPackageType) {
+                                        $query->where('type', $newPackageType);
+                                    })
+                                    ->when(
+                                        $get('id'),
+                                        fn (Builder $query, $id) => $query->where('id', '!=', $id)
+                                    )
+                                    ->exists();
+
+                                if ($hasExistingPackage) {
+                                    $typeName = $newPackageType === 'quota' ? 'Kuota' : 'Bulanan';
+                                    $fail("Student ini sudah memiliki package dengan tipe {$typeName}.");
+                                }
+                            };
+                        },
+                    ]),
 
                 DatePicker::make('start_date')
-                    ->required(),
+                    ->required()
+                    ->reactive()
+                    ->afterStateHydrated(function ($state, callable $set) {
+                        if (!$state) {
+                            $set('start_date', now()->format('Y-m-d')); // default hari ini
+                        }
+                    })
+                    ->displayFormat('m/d/Y'),
 
-                DatePicker::make('end_date'),
+                DatePicker::make('end_date')
+                    ->reactive()
+                    ->displayFormat('m/d/Y')
+                    ->disabled(),
 
                 TextInput::make('total_quota')
                     ->numeric()
-                    ->minValue(0),
+                    ->minValue(0)
+                    ->hidden(fn ($get) => !$get('show_total_quota')),
 
                 TextInput::make('remaining_quota')
                     ->numeric()
-                    ->minValue(0),
+                    ->minValue(0)
+                    ->hidden(),
             ]);
     }
-
-
 
     public static function table(Table $table): Table
     {
