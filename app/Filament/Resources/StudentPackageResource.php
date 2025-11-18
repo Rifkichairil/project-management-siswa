@@ -29,8 +29,13 @@ class StudentPackageResource extends Resource
     protected static ?int $navigationSort = 3;
 
 
+
     public static function form(Form $form): Form
     {
+
+        $record = $form->getRecord();
+        $recordId = $record?->id;
+
         return $form
             ->schema([
                 Select::make('student_id')
@@ -44,6 +49,15 @@ class StudentPackageResource extends Resource
                     ->required()
                     ->searchable()
                     ->reactive()
+                    // ← JALAN SAAT EDIT (hydrate)
+                    ->afterStateHydrated(function ($state, callable $set) {
+                        if (!$state) return;
+                        $package = \App\Models\Package::find($state);
+                        if (!$package) return;
+
+                        // Jika package type monthly → tampilkan total_quota
+                        $set('show_total_quota', $package->type === 'monthly');
+                    })
                     ->afterStateUpdated(function ($state, callable $set, $get) {
                         $package = \App\Models\Package::find($state);
                         if (!$package) return;
@@ -64,8 +78,9 @@ class StudentPackageResource extends Resource
                         }
                     })
                     ->rules([
-                        function ($get) {
-                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                        function ($get) use ($recordId) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get, $recordId) {
+
                                 $studentId = $get('student_id');
                                 $packageId = $value;
 
@@ -74,20 +89,20 @@ class StudentPackageResource extends Resource
                                 $newPackage = \App\Models\Package::find($packageId);
                                 if (!$newPackage) return;
 
-                                $newPackageType = $newPackage->type;
+                                $newType = $newPackage->type;
 
-                                $hasExistingPackage = \App\Models\StudentPackage::where('student_id', $studentId)
-                                    ->whereHas('package', function (Builder $query) use ($newPackageType) {
-                                        $query->where('type', $newPackageType);
-                                    })
-                                    ->when(
-                                        $get('id'),
-                                        fn (Builder $query, $id) => $query->where('id', '!=', $id)
-                                    )
-                                    ->exists();
+                                $query = \App\Models\StudentPackage::where('student_id', $studentId)
+                                    ->whereHas('package', function ($query) use ($newType) {
+                                        $query->where('type', $newType);
+                                    });
 
-                                if ($hasExistingPackage) {
-                                    $typeName = $newPackageType === 'quota' ? 'Kuota' : 'Bulanan';
+                                // ⭐ SKIP DIRINYA SENDIRI SAAT EDIT
+                                if ($recordId) {
+                                    $query->where('id', '!=', $recordId);
+                                }
+
+                                if ($query->exists()) {
+                                    $typeName = $newType === 'quota' ? 'Kuota' : 'Bulanan';
                                     $fail("Student ini sudah memiliki package dengan tipe {$typeName}.");
                                 }
                             };
@@ -107,7 +122,8 @@ class StudentPackageResource extends Resource
                 DatePicker::make('end_date')
                     ->reactive()
                     ->displayFormat('m/d/Y')
-                    ->disabled(),
+                    ->disabled()
+                    ->dehydrated(true),
 
                 TextInput::make('total_quota')
                     ->numeric()
