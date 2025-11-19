@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ClassScheduleResource\Pages;
 use App\Filament\Resources\ClassScheduleResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Actions\CreateAction;
 
 class ListClassSchedules extends ListRecords
 {
@@ -13,7 +14,10 @@ class ListClassSchedules extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            // Gunakan CreateAction untuk menampilkan formulir dalam modal
+            CreateAction::make()
+                // Opsi tambahan (opsional):
+                ->modalWidth('5xl')
         ];
     }
 }

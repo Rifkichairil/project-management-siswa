@@ -11,26 +11,109 @@ class StudentPackage extends Model
     use HasFactory;
 
     protected $fillable = ['student_id','package_id','start_date','end_date','total_quota','remaining_quota'];
+    // protected static function boot()
+    // {
+    //     parent::boot();
+
+    //     static::saving(function ($model) {
+    //         // Hanya jalankan jika start_date benar2 berubah
+    //         if ($model->isDirty('start_date')) {
+
+    //             // dd($model);
+    //             $old = StudentPackage::where('id',  $model->id)
+    //                 ->orderByDesc('start_date')
+    //                 ->first();
+
+    //             if ($old && $model->start_date > $old->start_date) {
+
+    //                 // Ambil value lama dari database
+    //                 $oldRemaining = $old->remaining_quota ?? 0;
+    //                 $model->remaining_quota = $oldRemaining + $model->total_quota;
+    //             }
+    //         }
+    //     });
+    // }
+
     protected static function boot()
     {
         parent::boot();
 
         static::saving(function ($model) {
-            // Hanya jalankan jika start_date benar2 berubah
-            if ($model->isDirty('start_date')) {
 
-                // dd($model);
-                $old = StudentPackage::where('id',  $model->id)
-                    ->orderByDesc('start_date')
-                    ->first();
+            $isUpdate = $model->exists;
 
-                if ($old && $model->start_date > $old->start_date) {
+            // Ambil data lama jika update
+            $old = $isUpdate ? StudentPackage::find($model->id) : null;
 
-                    // Ambil value lama dari database
-                    $oldRemaining = $old->remaining_quota ?? 0;
-                    $model->remaining_quota = $oldRemaining + $model->total_quota;
-                }
+            // Ambil type package sekarang
+            $package = Package::find($model->package_id);
+            if (!$package) return;
+
+            $packageType = $package->type; // 'monthly' atau 'quota'
+
+
+            // -------------------------------------------------------
+            // ===============  CREATE LOGIC  ========================
+            // -------------------------------------------------------
+            if (!$isUpdate) {
+                $model->remaining_quota = $model->total_quota ?? 0;
+                return;
             }
+
+
+            // -------------------------------------------------------
+            // ===============  UPDATE LOGIC  ========================
+            // -------------------------------------------------------
+
+            $packageChanged     = $model->isDirty('package_id');
+            $startDateChanged   = $model->isDirty('start_date');
+
+
+            // ====== Jika PACKAGE berubah ======
+            if ($packageChanged) {
+
+                // Jika ganti paket → reset remaining seperti paket baru
+                $model->remaining_quota = $model->total_quota ?? 0;
+                return;
+            }
+
+
+            // ====== Jika TYPE = QUOTA → remaining tidak berubah ======
+            if ($packageType === 'quota') {
+                // Tidak boleh mengubah remaining quota
+                // $model->remaining_quota = 100 ;
+                $oldRemaining = $old->remaining_quota ?? 0;
+                $model->remaining_quota = $oldRemaining + $model->total_quota;
+                return;
+            } else {
+                if ($model->start_date <= $old->start_date) {
+                    $model->remaining_quota = $model->total_quota + $old->remaining_quota;
+                    return;
+                }
+
+                // Jika start_date naik = perpanjangan bulan
+                $model->remaining_quota = ($old->remaining_quota ?? 0) + ($model->total_quota ?? 0);
+                return;
+            }
+
+
+            // ====== TYPE = MONTHLY ======
+
+            // if ($startDateChanged) {
+
+            //     // Jika mundur → tidak boleh update remaining
+            //     if ($model->start_date <= $old->start_date) {
+            //         $model->remaining_quota = $old->remaining_quota;
+            //         return;
+            //     }
+
+            //     // Jika start_date naik = perpanjangan bulan
+            //     $model->remaining_quota = ($old->remaining_quota ?? 0) + ($model->total_quota ?? 0);
+            //     return;
+            // }
+
+            // Default: tidak ada perubahan
+            $model->remaining_quota = $old->remaining_quota;
         });
     }
 
