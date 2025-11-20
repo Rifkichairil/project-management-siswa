@@ -27,7 +27,6 @@ class ClassSchedule extends Model
     return $this->belongsTo(Teacher::class);
     }
 
-
     public function classReport()
     {
     return $this->hasOne(ClassReport::class);

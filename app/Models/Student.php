@@ -22,9 +22,13 @@ class Student extends Model
     return $this->hasMany(StudentPackage::class);
     }
 
-
     public function classSchedules()
     {
     return $this->hasMany(ClassSchedule::class);
+    }
+
+    public function getUserNameAttribute()
+    {
+        return $this->user->name;
     }
 }
