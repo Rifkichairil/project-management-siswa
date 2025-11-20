@@ -26,56 +26,98 @@ class ClassScheduleResource extends Resource
     protected static ?int $navigationSort = 2;
 
 
-    public static function form(Form $form): Form
+   public static function form(Form $form): Form
     {
-    return $form
-        ->schema([
-        Forms\Components\Grid::make(2)
+        return $form
             ->schema([
-                Select::make('student_id')
-                    ->label('Student')
-                    ->relationship('student.user', 'name')
-                    ->searchable()
-                    ->required(),
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        Select::make('student_id')
+                            ->label('Student')
+                            ->relationship('student.user', 'name')
+                            ->searchable()
+                            ->required(),
 
+                        Select::make('teacher_id')
+                            ->label('Teacher')
+                            ->relationship('teacher.user', 'name')
+                            ->searchable()
+                            ->required(), // <-- Field kunci untuk validasi
 
-                Select::make('teacher_id')
-                    ->label('Teacher')
-                    ->relationship('teacher.user', 'name')
-                    ->searchable()
-                    ->required(),
+                        Select::make('subject_id')
+                            ->label('Subject')
+                            ->relationship('subject', 'name')
+                            ->searchable()
+                            ->required(),
 
+                        DatePicker::make('date')
+                            ->required(), // <-- Field kunci untuk validasi
 
-                Select::make('subject_id')
-                    ->label('Subject')
-                    ->relationship('subject', 'name')
-                    ->searchable()
-                    ->required(),
+                        TimePicker::make('time_start')
+                            ->label('Time Start')
+                            ->required()
+                            ->seconds(false)        // Opsional: Menghilangkan detik (misalnya 10:00, bukan 10:00:00)
+                            ->displayFormat('H:i') // Tampilkan format 24 jam (10:00)
+                            ->rules([
+                                function (string $attribute, $value, Closure $fail, $get) {
+                                    // Ambil nilai dari field kunci
+                                    $teacherId = $get('teacher_id');
+                                    $date = $get('date');
+                                    $timeEnd = $get('time_end');
+                                    $record = $get('id'); // ID entri saat ini (untuk edit, biarkan kosong saat create)
 
+                                    if (!$teacherId || !$date || !$timeEnd) {
+                                        // Lewati validasi jika field kunci belum diisi
+                                        return;
+                                    }
 
-                DatePicker::make('date')
-                    ->required(),
+                                    // 1. Validasi waktu mulai tidak boleh lebih dari atau sama dengan waktu selesai
+                                    if ($value >= $timeEnd) {
+                                        $fail("Waktu mulai harus sebelum waktu selesai.");
+                                        return;
+                                    }
 
+                                    // 2. Cek tumpang tindih (Overlap Check)
+                                    $overlapExists = Schedule::query()
+                                        ->where('teacher_id', $teacherId)
+                                        ->where('date', $date)
+                                        // Abaikan record saat ini jika sedang mode Edit
+                                        ->when($record, fn (Builder $query) => $query->where('id', '!=', $record))
 
-                TimePicker::make('time_start')
-                    ->required(),
+                                        // Logika Tumpang Tindih (Exist_end > New_start AND Exist_start < New_end)
+                                        ->where(function (Builder $query) use ($value, $timeEnd) {
+                                            $query->where('time_end', '>', $value)
+                                                  ->where('time_start', '<', $timeEnd);
+                                        })
+                                        ->exists();
 
+                                    if ($overlapExists) {
+                                        $fail("Guru yang dipilih sudah memiliki jadwal yang tumpang tindih pada waktu ini.");
+                                    }
+                                },
+                            ]),
 
-                TimePicker::make('time_end')
-                    ->required(),
+                        TimePicker::make('time_end')
+                            ->label('Time End')
+                            ->seconds(false)        // Opsional: Menghilangkan detik (misalnya 10:00, bukan 10:00:00)
+                            ->displayFormat('H:i') // Tampilkan format 24 jam (10:00)
+                            ->required()
+                            ->withoutSeconds()      // HH:MM
+                            ->format('H:i') // <-- KUNCI: Mengatur format Flatpickr ke 24 jam
+                            ->rules([
+                                'date_format:H:i'
+                            ]),
 
-
-                Select::make('status')
-                    ->options([
-                    'scheduled' => 'Scheduled',
-                    'completed' => 'Completed',
-                    'cancelled' => 'Cancelled',
-                    ])
-                    ->required(),
-            ]),
-        ]);
+                        Select::make('status')
+                            ->options([
+                                'scheduled' => 'Scheduled',
+                                'completed' => 'Completed',
+                                'cancelled' => 'Cancelled',
+                            ])
+                            ->required(),
+                    ]),
+            ]);
     }
-
 
     public static function table(Table $table): Table
     {
