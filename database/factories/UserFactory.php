@@ -23,15 +23,40 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-         return [
-            'name' => fake()->name(),
+        // Hitung jumlah role yang sudah ada
+        $adminCount   = \App\Models\User::where('role', 'admin')->count();
+        $teacherCount = \App\Models\User::where('role', 'teacher')->count();
+        $studentCount = \App\Models\User::where('role', 'student')->count();
+
+        // Tentukan role berdasarkan quota
+        if ($adminCount < 2) {
+            $role = 'admin';
+        } elseif ($teacherCount < 5) {
+            $role = 'teacher';
+        } elseif ($studentCount < 5) {
+            $role = 'student';
+        } else {
+            $role = fake()->randomElement(['admin', 'teacher', 'student']);
+        }
+
+        // Tentukan prefix name berdasarkan role
+        $prefix = match($role) {
+            'admin'   => 'Admin ',
+            'teacher' => 'Teacher ',
+            'student' => 'Student ',
+            default   => '',
+        };
+
+        return [
+            'name' => $prefix . fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => bcrypt('password'),
-            'role' => fake()->randomElement(['admin', 'teacher', 'student']),
-            'remember_token' => Str::random(10),
+            'role' => $role,
+            'remember_token' => \Illuminate\Support\Str::random(10),
         ];
     }
+
 
     /**
      * Indicate that the model's email address should be unverified.
