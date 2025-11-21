@@ -19,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
+use Carbon\Carbon;
 use Filament\Forms\Components\TimePicker;
 
 class ClassScheduleResource extends Resource
@@ -121,8 +122,65 @@ class ClassScheduleResource extends Resource
                                     ->seconds(false)
                                     ->format('H:i')
                                     ->displayFormat('H:i')
-                                    ->required(),
+                                    ->required()
+                                    ->rule(function ($get) {   // <- NO type-hint here
+                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $studentId = $get('student_id');
+                                            $teacherId = $get('teacher_id');
+                                            $date      = $get('date');
+                                            $start     = $get('time_start');
+                                            $end       = $get('time_end');
 
+                                            // skip if incomplete
+                                            if (! $studentId || ! $teacherId || ! $date || ! $start || ! $end) {
+                                                return; // don't validate yet
+                                            }
+
+                                            // check teacher overlap (reuse your existing rule logic)
+                                            $exists = ClassSchedule::where('teacher_id', $teacherId)
+                                                ->where('date', $date)
+                                                ->where(function ($q) use ($start, $end) {
+                                                    $q->whereBetween('time_start', [$start, $end])
+                                                    ->orWhereBetween('time_end', [$start, $end])
+                                                    ->orWhere(function ($q2) use ($start, $end) {
+                                                        $q2->where('time_start', '<=', $start)
+                                                            ->where('time_end', '>=', $end);
+                                                    });
+                                                })
+                                                ->exists();
+
+                                            if ($exists) {
+                                                $fail('This teacher already has a schedule that overlaps with this time.');
+                                                return;
+                                            }
+
+                                            // quota check based on duration (ceil hours)
+                                            $minutes = Carbon::parse($start)->diffInMinutes(Carbon::parse($end));
+                                            $quotaRequired = (int) ceil($minutes / 60);
+
+                                            // get active student package
+                                            $package = \App\Models\StudentPackage::where('student_id', $studentId)->orderByDesc('id')->first();
+                                            if (! $package) {
+                                                $fail('Student does not have an active package.');
+                                                return;
+                                            }
+
+                                            // compute used quota from existing scheduled/completed classes
+                                            $used = ClassSchedule::where('student_id', $studentId)
+                                                ->whereIn('status', ['scheduled', 'completed'])
+                                                ->get()
+                                                ->sum(function ($s) {
+                                                    return (int) ceil(
+                                                        Carbon::parse($s->time_start)->diffInMinutes(Carbon::parse($s->time_end)) / 60
+                                                    );
+                                                });
+
+                                            if (($used + $quotaRequired) > $package->total_quota) {
+                                                $remaining = $package->total_quota - $used;
+                                                $fail("Insufficient quota. Required: {$quotaRequired}, Remaining: {$remaining}.");
+                                            }
+                                        };
+                                    }),
                                 TimePicker::make('time_end')
                                     ->label('Time End')
                                     ->native(false)
