@@ -65,38 +65,6 @@ class StudentResource extends Resource
                             ->label('Parent Contact')
                             ->maxLength(255),
                     ])->columns(2),
-
-                // // quota
-                // Forms\Components\Section::make('Student Package (Quota)')
-                //     ->schema([
-
-                //         Forms\Components\Select::make('package_id')
-                //             ->label('Package')
-                //             ->relationship('studentPackages.package', 'name')
-                //             ->required()
-                //             ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent),
-
-                //         Forms\Components\DatePicker::make('start_date')
-                //             ->label('Start Date')
-                //             ->required()
-                //             ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent),
-
-                //         Forms\Components\TextInput::make('total_quota')
-                //             ->numeric()
-                //             ->label('Total Quota')
-                //             ->required()
-                //             ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent),
-
-                //         Forms\Components\TextInput::make('remaining_quota')
-                //             ->numeric()
-                //             ->label('Remaining Quota')
-                //             ->default(fn (callable $get) => $get('total_quota'))
-                //             ->required()
-                //             ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent),
-
-                //     ])
-                //     ->visible(fn ($livewire) => $livewire instanceof Pages\CreateStudent)
-                //     ->columns(2), // hanya di CREATE
             ]);
     }
 
@@ -146,8 +114,8 @@ class StudentResource extends Resource
     {
         return [
             'index' => Pages\ListStudents::route('/'),
-            'create' => Pages\CreateStudent::route('/create'),
-            'edit' => Pages\EditStudent::route('/{record}/edit'),
+            // 'create' => Pages\CreateStudent::route('/create'),
+            // 'edit' => Pages\EditStudent::route('/{record}/edit'),
         ];
     }
 }

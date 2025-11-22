@@ -5,8 +5,11 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ClassScheduleResource\Pages;
 use App\Filament\Resources\ClassScheduleResource\RelationManagers;
 use App\Models\ClassSchedule;
+use App\Rules\CheckStudentQuota;
+use App\Rules\NoScheduleOverlap;
 use App\Rules\NoTeacherOverlap;
 use Closure;
+use Filament\Forms\Get; // Tambahkan ini
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -116,71 +119,16 @@ class ClassScheduleResource extends Resource
                             ->required(),
                         Grid::make(3)
                             ->schema([
+                                // Kolom Time Start:
                                 TimePicker::make('time_start')
                                     ->label('Time Start')
                                     ->native(false)
                                     ->seconds(false)
                                     ->format('H:i')
                                     ->displayFormat('H:i')
-                                    ->required()
-                                    ->rule(function ($get) {   // <- NO type-hint here
-                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                            $studentId = $get('student_id');
-                                            $teacherId = $get('teacher_id');
-                                            $date      = $get('date');
-                                            $start     = $get('time_start');
-                                            $end       = $get('time_end');
+                                    ->required(),
 
-                                            // skip if incomplete
-                                            if (! $studentId || ! $teacherId || ! $date || ! $start || ! $end) {
-                                                return; // don't validate yet
-                                            }
-
-                                            // check teacher overlap (reuse your existing rule logic)
-                                            $exists = ClassSchedule::where('teacher_id', $teacherId)
-                                                ->where('date', $date)
-                                                ->where(function ($q) use ($start, $end) {
-                                                    $q->whereBetween('time_start', [$start, $end])
-                                                    ->orWhereBetween('time_end', [$start, $end])
-                                                    ->orWhere(function ($q2) use ($start, $end) {
-                                                        $q2->where('time_start', '<=', $start)
-                                                            ->where('time_end', '>=', $end);
-                                                    });
-                                                })
-                                                ->exists();
-
-                                            if ($exists) {
-                                                $fail('This teacher already has a schedule that overlaps with this time.');
-                                                return;
-                                            }
-
-                                            // quota check based on duration (ceil hours)
-                                            $minutes = Carbon::parse($start)->diffInMinutes(Carbon::parse($end));
-                                            $quotaRequired = (int) ceil($minutes / 60);
-
-                                            // get active student package
-                                            $package = \App\Models\StudentPackage::where('student_id', $studentId)->orderByDesc('id')->first();
-                                            if (! $package) {
-                                                $fail('Student does not have an active package.');
-                                                return;
-                                            }
-
-                                            // compute used quota from existing scheduled/completed classes
-                                            $used = ClassSchedule::where('student_id', $studentId)
-                                                ->whereIn('status', ['scheduled', 'completed'])
-                                                ->get()
-                                                ->sum(function ($s) {
-                                                    return (int) ceil(
-                                                        Carbon::parse($s->time_start)->diffInMinutes(Carbon::parse($s->time_end)) / 60
-                                                    );
-                                                });
-
-                                            if (($used + $quotaRequired) > $package->total_quota) {
-                                                $remaining = $package->total_quota - $used;
-                                                $fail("Insufficient quota. Required: {$quotaRequired}, Remaining: {$remaining}.");
-                                            }
-                                        };
-                                    }),
+                                // Kolom Time End (Pasang Validasi di sini!):
                                 TimePicker::make('time_end')
                                     ->label('Time End')
                                     ->native(false)
@@ -188,25 +136,25 @@ class ClassScheduleResource extends Resource
                                     ->format('H:i')
                                     ->displayFormat('H:i')
                                     ->required()
-                                    ->rule(function ($get) {
-                                        $teacherId = $get('teacher_id');
-                                        $date      = $get('date');
-                                        $start     = $get('time_start');
-                                        $end       = $get('time_end');
-                                        $currentId = request()->route('record');
+                                    ->rules([
+                                        'after:time_start', // Waktu selesai harus setelah waktu mulai
 
-                                        if (!$teacherId || !$date || !$start || !$end) {
-                                            return [];
-                                        }
+                                        // Validasi 1: Pengecekan Kuota
+                                        fn (Get $get) => new CheckStudentQuota(
+                                            studentId: $get('student_id'),
+                                            timeStart: $get('time_start')
+                                        ),
 
-                                        return new NoTeacherOverlap(
-                                            teacherId: $teacherId,
-                                            date: $date,
-                                            timeStart: $start,
-                                            timeEnd: $end,
-                                            ignoreId: $currentId,
-                                        );
-                                    }),
+                                        // Validasi 2: Pengecekan Overlapping Jadwal
+                                        fn (Get $get, string $operation) => new NoScheduleOverlap(
+                                            date: $get('date'),
+                                            teacherId: $get('teacher_id'),
+                                            studentId: $get('student_id'),
+                                            timeStart: $get('time_start'),
+                                            // Kirim ID jika sedang Edit untuk diabaikan
+                                            ignoringId: $operation === 'edit' ? $get('id') : null
+                                        )
+                                    ]),
                                     Select::make('status')
                                         ->options([
                                             'scheduled' => 'Scheduled',
@@ -229,11 +177,23 @@ class ClassScheduleResource extends Resource
             TextColumn::make('date')->date(),
             TextColumn::make('time_start')->label('Start'),
             TextColumn::make('time_end')->label('End'),
-            TextColumn::make('status')->badge(),
+            // 🎨 Kolom Status dengan Pewarnaan Dinamis
+            TextColumn::make('status')
+                ->badge() // Wajib menggunakan badge() untuk mewarnai teks di dalamnya
+                ->color(fn (string $state): string => match ($state) {
+                    'completed' => 'success', // Hijau
+                    'cancelled' => 'danger',  // Merah
+                    'scheduled' => 'primary', // Biru (Warna default utama Filament)
+                    default => 'secondary', // Opsional: Untuk status yang tidak didefinisikan
+                }),
         ])
         ->filters([])
         ->actions([
-            Tables\Actions\EditAction::make(),
+            Tables\Actions\EditAction::make()// ... (konfigurasi Edit Action)
+                ->after(function ($livewire) {
+                    // Memicu event refresh setelah action Edit berhasil
+                    $livewire->dispatch('refreshTabsAndTable');
+                }),
         ])
         ->bulkActions([
             Tables\Actions\DeleteBulkAction::make(),
