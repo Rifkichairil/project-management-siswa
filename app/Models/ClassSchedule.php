@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class ClassSchedule extends Model
 {
@@ -84,5 +85,26 @@ class ClassSchedule extends Model
         $quotaUnits = ceil($actualDurationInMinutes / 60);
 
         return (int) $quotaUnits * 60;
+    }
+
+    /**
+     * Custom method untuk handle complete class + save report
+     */
+    public function completeClass(array $data)
+    {
+        return DB::transaction(function () use ($data) {
+            // 1. Update status parent
+            $this->update([
+                'status' => $data['status']
+            ]);
+
+            // 2. Update atau Create report (hanya jika completed)
+            if ($data['status'] === 'completed' && isset($data['classReport'])) {
+                $this->classReport()->updateOrCreate(
+                    ['class_schedule_id' => $this->id], // Kunci pencarian
+                    $data['classReport']                // Data yang disimpan
+                );
+            }
+        });
     }
 }

@@ -16,4 +16,17 @@ class EditClassSchedule extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function afterSave(): void
+    {
+        if ($this->record->status === 'completed') {
+
+            $this->record->classReport()->updateOrCreate([], [
+                'topic' => $this->data['classReport']['topic'] ?? null,
+                'progress' => $this->data['classReport']['progress'] ?? null,
+                'notes' => $this->data['classReport']['notes'] ?? null,
+                'teacher_feedback' => $this->data['classReport']['teacher_feedback'] ?? null,
+            ]);
+        }
+    }
 }

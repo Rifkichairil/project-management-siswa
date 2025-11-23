@@ -23,7 +23,11 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Carbon\Carbon;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
 
 class ClassScheduleResource extends Resource
 {
@@ -161,7 +165,26 @@ class ClassScheduleResource extends Resource
                                             'completed' => 'Completed',
                                             'cancelled' => 'Cancelled',
                                         ])
-                                        ->required(),
+                                        ->required()
+                                        ->reactive(),
+
+                                    Forms\Components\Section::make('Class Report')
+                                        ->schema([
+                                            TextInput::make('classReport.topic')
+                                                ->label('Topic')
+                                                ->required(),
+
+                                            Textarea::make('classReport.progress')
+                                                ->label('Progress'),
+
+                                            Textarea::make('classReport.notes')
+                                                ->label('Notes'),
+
+                                            Textarea::make('classReport.teacher_feedback')
+                                                ->label('Teacher Feedback'),
+                                        ])
+                                        ->visible(fn (callable $get) => $get('status') === 'completed') // <--- TAMPIL JIKA COMPLETED
+                                        ->columns(2),
                                 ]),
                     ]),
             ]);
@@ -190,10 +213,59 @@ class ClassScheduleResource extends Resource
         ->filters([])
         ->actions([
             Tables\Actions\EditAction::make()// ... (konfigurasi Edit Action)
+                ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
                 ->after(function ($livewire) {
                     // Memicu event refresh setelah action Edit berhasil
                     $livewire->dispatch('refreshTabsAndTable');
                 }),
+                Action::make('complete_class')
+                    ->label('Complete Class')
+                    ->icon('heroicon-m-check-circle')
+                    ->color('success')
+                    ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
+                    // 1. Mount Data (Agar field terisi jika sudah pernah di-input sebelumnya)
+                    ->mountUsing(fn (ClassSchedule $record, Forms\ComponentContainer $form) => $form->fill([
+                        'status' => $record->status, // Ambil status saat ini
+                        'classReport' => $record->classReport?->toArray(), // Load data report jika ada
+                    ]))
+                    // 2. Schema Form (Seperti kode Anda)
+                    ->form([
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'scheduled' => 'Scheduled',
+                                'completed' => 'Completed',
+                                'cancelled' => 'Cancelled',
+                            ])
+                            ->required()
+                            ->live(), // Gunakan live untuk reaktivitas
+
+                        Forms\Components\Section::make('Class Report')
+                            ->schema([
+                                Forms\Components\TextInput::make('classReport.topic')
+                                    ->label('Topic')
+                                    ->required(fn (Forms\Get $get) => $get('status') === 'completed'),
+
+                                Forms\Components\Textarea::make('classReport.progress')
+                                    ->label('Progress'),
+
+                                Forms\Components\Textarea::make('classReport.notes')
+                                    ->label('Notes'),
+
+                                Forms\Components\Textarea::make('classReport.teacher_feedback')
+                                    ->label('Teacher Feedback'),
+                            ])
+                            // Visible hanya jika status completed
+                            ->visible(fn (Forms\Get $get) => $get('status') === 'completed')
+                            ->columns(2),
+        ])
+        // 3. Logic Penyimpanan (Action Handler)
+        ->action(function (ClassSchedule $record, array $data) {
+            // CUKUP 1 BARIS INI SAJA
+            $record->completeClass($data);
+
+            // Optional: Kasih notifikasi
+            Notification::make()->title('Class completed successfully')->success()->send();
+        }),
         ])
         ->bulkActions([
             Tables\Actions\DeleteBulkAction::make(),
