@@ -9,4 +9,10 @@ class ClassReport extends Model
 {
     /** @use HasFactory<\Database\Factories\ClassReportFactory> */
     use HasFactory;
+
+    public function classSchedule()
+    {
+        return $this->belongsTo(ClassSchedule::class);
+    }
+
 }

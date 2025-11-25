@@ -9,6 +9,9 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -127,6 +130,26 @@ class StudentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Action::make('downloadReport')
+                    ->label('Download Report PDF')
+                    ->icon('heroicon-o-document-text')
+                    ->action(function () {
+                        $student = $this->record;
+
+                        $pdf = Pdf::loadView('reports.student', [
+                            'student' => $student,
+                            'classHistory' => $student->classSchedules()->with('classReport', 'teacher', 'subject')->where('status', 'completed')->get(),
+                            'totalPackage' => $student->packages->sum('total_quota'),
+                            'usedQuota' => $student->packages->sum('used_quota'),
+                            'remainingQuota' => $student->packages->sum('total_quota') - $student->packages->sum('used_quota'),
+                        ]);
+
+                        return response()->streamDownload(
+                            fn () => print($pdf->output()),
+                            'Report-'.$student->name.'.pdf'
+                        );
+                    }),
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
