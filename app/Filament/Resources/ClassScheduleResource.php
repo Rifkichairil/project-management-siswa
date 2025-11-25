@@ -159,32 +159,15 @@ class ClassScheduleResource extends Resource
                                             ignoringId: $operation === 'edit' ? $get('id') : null
                                         )
                                     ]),
-                                    Select::make('status')
-                                        ->options([
-                                            'scheduled' => 'Scheduled',
-                                            'completed' => 'Completed',
-                                            'cancelled' => 'Cancelled',
-                                        ])
-                                        ->required()
-                                        ->reactive(),
-
-                                    Forms\Components\Section::make('Class Report')
-                                        ->schema([
-                                            TextInput::make('classReport.topic')
-                                                ->label('Topic')
-                                                ->required(),
-
-                                            Textarea::make('classReport.progress')
-                                                ->label('Progress'),
-
-                                            Textarea::make('classReport.notes')
-                                                ->label('Notes'),
-
-                                            Textarea::make('classReport.teacher_feedback')
-                                                ->label('Teacher Feedback'),
-                                        ])
-                                        ->visible(fn (callable $get) => $get('status') === 'completed') // <--- TAMPIL JIKA COMPLETED
-                                        ->columns(2),
+                                Select::make('status')
+                                    ->options([
+                                        'scheduled' => 'Scheduled',
+                                        'completed' => 'Completed',
+                                        'cancelled' => 'Cancelled',
+                                    ])
+                                    ->required()
+                                    ->reactive()
+                                    ->hiddenOn('edit'),
                                 ]),
                     ]),
             ]);

@@ -98,25 +98,35 @@ class StudentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Action::make('downloadReport')
-                    ->label('Download Report PDF')
+                Action::make('downloadPdf')
+                    ->label('PDF')
                     ->icon('heroicon-o-document-text')
-                    ->action(function () {
-                        $student = $this->record;
+                    ->action(function ($record) {
+                        // dd($record->user->name); // test dulu
+                        $totalPackage   = $record->studentPackages?->sum('total_quota') ?? 0;
+                        $usedQuota      = $record->studentPackages?->sum('used_quota') ?? 0;
+                        $remainingQuota = $totalPackage - $usedQuota;
+
+                        $classHistory = $record->classSchedules()
+                            ->with(['classReport', 'teacher', 'subject'])
+                            ->where('status', 'completed')
+                            ->get();
 
                         $pdf = Pdf::loadView('reports.student', [
-                            'student' => $student,
-                            'classHistory' => $student->classSchedules()->with('classReport', 'teacher', 'subject')->where('status', 'completed')->get(),
-                            'totalPackage' => $student->packages->sum('total_quota'),
-                            'usedQuota' => $student->packages->sum('used_quota'),
-                            'remainingQuota' => $student->packages->sum('total_quota') - $student->packages->sum('used_quota'),
+                            'student'        => $record,
+                            'classHistory'   => $classHistory,
+                            'totalPackage'   => $totalPackage,
+                            'usedQuota'      => $usedQuota,
+                            'remainingQuota' => $remainingQuota,
                         ]);
 
                         return response()->streamDownload(
                             fn () => print($pdf->output()),
-                            'Report-'.$student->name.'.pdf'
+                            'Report-' . $record->user->name . '-' . now()->format('Y-m-d') . '.pdf'
                         );
                     }),
+
+
 
             ])
             ->bulkActions([

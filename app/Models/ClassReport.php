@@ -10,11 +10,12 @@ class ClassReport extends Model
     /** @use HasFactory<\Database\Factories\ClassReportFactory> */
     use HasFactory;
 
+    protected $fillable = ['class_schedule_id', 'topic', 'progress', 'notes', 'teacher_feedback'];
+
     public function classSchedule()
     {
         return $this->belongsTo(ClassSchedule::class);
     }
 
-    protected $fillable = ['class_schedule_id', 'topic', 'progress', 'notes', 'teacher_feedback'];
 }
 
