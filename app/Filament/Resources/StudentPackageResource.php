@@ -130,6 +130,7 @@ class StudentPackageResource extends Resource
                     ->minValue(0)
                     ->hidden(fn ($get) => !$get('show_total_quota')),
 
+
                 TextInput::make('remaining_quota')
                     ->numeric()
                     ->minValue(0)
@@ -161,6 +162,7 @@ class StudentPackageResource extends Resource
 
                 Tables\Columns\TextColumn::make('total_quota'),
 
+                Tables\Columns\TextColumn::make('used_quota'),
                 Tables\Columns\TextColumn::make('remaining_quota'),
                 Tables\Columns\BadgeColumn::make('status_topup')
                     ->label('Status')

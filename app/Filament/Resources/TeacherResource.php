@@ -100,8 +100,8 @@ class TeacherResource extends Resource
     {
         return [
             'index' => Pages\ListTeachers::route('/'),
-            'create' => Pages\CreateTeacher::route('/create'),
-            'edit' => Pages\EditTeacher::route('/{record}/edit'),
+            // 'create' => Pages\CreateTeacher::route('/create'),
+            // 'edit' => Pages\EditTeacher::route('/{record}/edit'),
         ];
     }
 }

@@ -15,4 +15,6 @@ class ClassReport extends Model
         return $this->belongsTo(ClassSchedule::class);
     }
 
+    protected $fillable = ['class_schedule_id', 'topic', 'progress', 'notes', 'teacher_feedback'];
 }
+
