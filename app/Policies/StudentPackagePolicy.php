@@ -13,7 +13,7 @@ class StudentPackagePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -21,7 +21,7 @@ class StudentPackagePolicy
      */
     public function view(User $user, StudentPackage $studentPackage): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -29,7 +29,7 @@ class StudentPackagePolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -37,7 +37,7 @@ class StudentPackagePolicy
      */
     public function update(User $user, StudentPackage $studentPackage): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -45,7 +45,7 @@ class StudentPackagePolicy
      */
     public function delete(User $user, StudentPackage $studentPackage): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -53,7 +53,7 @@ class StudentPackagePolicy
      */
     public function restore(User $user, StudentPackage $studentPackage): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -61,6 +61,6 @@ class StudentPackagePolicy
      */
     public function forceDelete(User $user, StudentPackage $studentPackage): bool
     {
-        return $user->role === 'superadmin';
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 }
