@@ -61,26 +61,60 @@ class ListClassSchedules extends ListRecords
 
     public function getTabs(): array
     {
+        $user = auth()->user(); // ambil user login
+
+        // Jika teacher → filter berdasarkan teacher_id
+        $baseQuery = static::getModel()::query();
+        if ($user->role === 'teacher') {
+            $baseQuery->where('teacher_id', $user->teacher->id);
+        }
+
         return [
             'all' => Tab::make('All Schedules')
-                ->badge(fn () => static::getModel()::count()),
+                ->modifyQueryUsing(fn ($query) => $user->role === 'teacher'
+                    ? $query->where('teacher_id', $user->teacher->id)
+                    : $query
+                )
+                ->badge(fn () => $user->role === 'teacher'
+                    ? static::getModel()::where('teacher_id', $user->teacher->id)->count()
+                    : static::getModel()::count()
+                ),
 
             'scheduled' => Tab::make('Scheduled')
-                ->modifyQueryUsing(fn ($query) => $query->where('status', 'scheduled'))
-                ->badge(fn () => static::getModel()::where('status', 'scheduled')->count())
+                ->modifyQueryUsing(fn ($query) => $user->role === 'teacher'
+                    ? $query->where('teacher_id', $user->teacher->id)->where('status', 'scheduled')
+                    : $query->where('status', 'scheduled')
+                )
+                ->badge(fn () => $user->role === 'teacher'
+                    ? static::getModel()::where('teacher_id', $user->teacher->id)->where('status','scheduled')->count()
+                    : static::getModel()::where('status','scheduled')->count()
+                )
                 ->badgeColor('primary'),
 
             'completed' => Tab::make('Completed')
-                ->modifyQueryUsing(fn ($query) => $query->where('status', 'completed'))
-                ->badge(fn () => static::getModel()::where('status', 'completed')->count())
+                ->modifyQueryUsing(fn ($query) => $user->role === 'teacher'
+                    ? $query->where('teacher_id', $user->teacher->id)->where('status', 'completed')
+                    : $query->where('status', 'completed')
+                )
+                ->badge(fn () => $user->role === 'teacher'
+                    ? static::getModel()::where('teacher_id',$user->teacher->id)->where('status','completed')->count()
+                    : static::getModel()::where('status','completed')->count()
+                )
                 ->badgeColor('success'),
 
             'cancelled' => Tab::make('Cancelled')
-                ->modifyQueryUsing(fn ($query) => $query->where('status', 'cancelled'))
-                ->badge(fn () => static::getModel()::where('status', 'cancelled')->count())
+                ->modifyQueryUsing(fn ($query) => $user->role === 'teacher'
+                    ? $query->where('teacher_id', $user->teacher->id)->where('status', 'cancelled')
+                    : $query->where('status', 'cancelled')
+                )
+                ->badge(fn () => $user->role === 'teacher'
+                    ? static::getModel()::where('teacher_id', $user->teacher->id)->where('status','cancelled')->count()
+                    : static::getModel()::where('status','cancelled')->count()
+                )
                 ->badgeColor('danger'),
         ];
     }
+
 
     protected function afterSave(): void
     {

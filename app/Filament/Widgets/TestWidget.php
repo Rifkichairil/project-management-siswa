@@ -41,33 +41,33 @@ class TestWidget extends BaseWidget
             $startDate = now()->subDays(7)->startOfDay();
         }
 
-       // Counts
+        // Counts
         $totalStudents = Student::count();
         $totalTeachers = Teacher::count();
 
-        $scheduled = ClassSchedule::where('status', 'scheduled')
-            ->whereBetween('created_at', [$startDate, $endDate])
+        $scheduled = ClassSchedule::where('status','scheduled')
+            ->whereBetween('created_at', [$startDate,$endDate])
             ->count();
 
-        $completed = ClassSchedule::where('status', 'completed')
-            ->whereBetween('created_at', [$startDate, $endDate])
+        $completed = ClassSchedule::where('status','completed')
+            ->whereBetween('created_at', [$startDate,$endDate])
             ->count();
 
-        $cancelled = ClassSchedule::where('status', 'cancelled')
-            ->whereBetween('created_at', [$startDate, $endDate])
+        $cancelled = ClassSchedule::where('status','cancelled')
+            ->whereBetween('created_at', [$startDate,$endDate])
             ->count();
 
-        // Attendance %
         $attendanceRate = ($scheduled + $completed) > 0
             ? round(($completed / ($scheduled + $completed)) * 100, 1)
             : 0;
 
-        return [
+        $stats = [
             Stat::make('Students', $totalStudents)
                 ->description('Total enrolled students')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('primary'),
 
+            // ==== CARD TEACHER (nanti di-hide kalau role = teacher) ====
             Stat::make('Teachers', $totalTeachers)
                 ->description('Active instructors')
                 ->descriptionIcon('heroicon-m-academic-cap')
@@ -88,11 +88,19 @@ class TestWidget extends BaseWidget
                 ->descriptionIcon('heroicon-m-x-circle')
                 ->color('danger'),
 
-            Stat::make('Attendance Rate', $attendanceRate . '%')
-                ->description('Student attendance performance')
+            Stat::make('Attendance Rate', $attendanceRate.'%')
+                ->description('Student attendance percentage')
                 ->descriptionIcon('heroicon-m-chart-bar')
                 ->color($attendanceRate >= 80 ? 'success' : 'warning'),
         ];
+
+        // === HIDE CARD TEACHERS JIKA LOGIN ROLE = TEACHER ===
+        if (auth()->user()->role === 'teacher') {
+            unset($stats[1]); // index ke-2 adalah card Teachers
+        }
+
+        return $stats;
     }
+
 
 }

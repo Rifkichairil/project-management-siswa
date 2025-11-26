@@ -264,4 +264,18 @@ class ClassScheduleResource extends Resource
             // 'edit' => Pages\EditClassSchedule::route('/{record}/edit'),
         ];
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $user = auth()->user();
+
+        // Jika user punya relasi ke teacher → berarti dia role teacher
+        if ($user->teacher) {
+            return parent::getEloquentQuery()
+                ->where('teacher_id', $user->teacher->id);
+        }
+
+        // Jika tidak punya teacher → kemungkinan admin → tampilkan semua
+        return parent::getEloquentQuery();
+    }
 }

@@ -10,6 +10,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 class StudentsLowQuota extends BaseWidget
 {
@@ -22,6 +23,14 @@ class StudentsLowQuota extends BaseWidget
     // Make the widget full width
     protected int|string|array $columnSpan = 'full';
 
+  public static function canView(?Authenticatable $user = null): bool
+    {
+        // gunakan $user jika diberikan (lebih direkomendasikan),
+        // fallback ke auth()->user() jika tidak.
+        $current = $user ?? auth()->user();
+
+        return $current !== null && $current->role === 'superadmin';
+    }
     /**
      * This is required by Filament Table: return a Builder used for the table.
      */

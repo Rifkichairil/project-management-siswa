@@ -151,4 +151,8 @@ class StudentResource extends Resource
             // 'edit' => Pages\EditStudent::route('/{record}/edit'),
         ];
     }
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes();
+    }
 }

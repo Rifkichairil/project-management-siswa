@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Faker\Factory as Faker;
 
 class NamaSeeder extends Seeder
 {
@@ -12,6 +14,28 @@ class NamaSeeder extends Seeder
      */
     public function run(): void
     {
-        //
+        $faker = Faker::create();
+
+        // === Generate 5 Teachers ===
+        for ($i = 1; $i <= 5; $i++) {
+            User::create([
+                'name'     => $faker->name(),
+                'email'    => "teacher{$i}@example.com",
+                'password' => Hash::make('password'),  // default: password
+                'role'     => 'teacher',
+                'isActive' => true,                    // aktif
+            ]);
+        }
+
+        // === Generate 5 Students ===
+        for ($i = 1; $i <= 5; $i++) {
+            User::create([
+                'name'     => $faker->name(),
+                'email'    => "student{$i}@example.com",
+                'password' => Hash::make('password'),
+                'role'     => 'student',
+                'isActive' => true,
+            ]);
+        }
     }
 }
