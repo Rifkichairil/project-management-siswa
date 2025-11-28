@@ -164,14 +164,18 @@ class StudentPackageResource extends Resource
 
                 Tables\Columns\TextColumn::make('used_quota'),
                 Tables\Columns\TextColumn::make('remaining_quota'),
-                Tables\Columns\BadgeColumn::make('status_topup')
-                    ->label('Status')
+                Tables\Columns\BadgeColumn::make('quota_status') // rename dari status_topup
+                    ->label('Quota Status')
                     ->getStateUsing(function ($record) {
-                        if ($record->remaining_quota === null) {
+
+                        if ($record->remaining_quota === null || $record->total_quota === null) {
                             return 'No Data';
                         }
 
-                        return $record->remaining_quota <= 5
+                        // <= 50% dari total_quota → Low Quota
+                        $threshold = (int) ceil($record->total_quota / 2);
+
+                        return $record->remaining_quota <= $threshold
                             ? 'Low Quota'
                             : 'Sufficient Quota';
                     })
@@ -181,8 +185,10 @@ class StudentPackageResource extends Resource
                     ])
                     ->icons([
                         'heroicon-o-exclamation-circle' => 'Low Quota',
-                        'heroicon-o-check-circle' => 'Sufficient Quota'
+                        'heroicon-o-check-circle'      => 'Sufficient Quota',
                     ]),
+                Tables\Columns\TextColumn::make('status'),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->toggleable(isToggledHiddenByDefault: true),

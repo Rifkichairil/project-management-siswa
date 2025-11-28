@@ -9,7 +9,7 @@ use Filament\Resources\Components\Tab;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
-
+use Illuminate\Support\Facades\DB;
 
 class ListStudentPackages extends ListRecords
 {
@@ -31,28 +31,29 @@ class ListStudentPackages extends ListRecords
         return [
             'all' => Tab::make('All'),
 
-            'sufficient_quota' => Tab::make('Sufficient Quota') // Aman
+            'sufficient_quota' => Tab::make('Sufficient Quota')
                 ->badge(
                     StudentPackage::query()
-                        ->where('remaining_quota', '>', 5)
+                        ->whereColumn('remaining_quota', '>', DB::raw('CEIL(total_quota / 2)')) // > 50%
                         ->count()
                 )
                 ->badgeColor('success')
                 ->modifyQueryUsing(fn (Builder $query) =>
-                    $query->where('remaining_quota', '>', 5)
+                    $query->whereColumn('remaining_quota', '>', DB::raw('CEIL(total_quota / 2)'))
                 ),
 
-            'low_quota' => Tab::make('Low Quota') // Perlu Topup
+            'low_quota' => Tab::make('Low Quota')
                 ->badge(
                     StudentPackage::query()
-                        ->where('remaining_quota', '<=', 5)
+                        ->whereColumn('remaining_quota', '<=', DB::raw('CEIL(total_quota / 2)')) // <= 50%
                         ->count()
                 )
                 ->badgeColor('danger')
                 ->modifyQueryUsing(fn (Builder $query) =>
-                    $query->where('remaining_quota', '<=', 5)
+                    $query->whereColumn('remaining_quota', '<=', DB::raw('CEIL(total_quota / 2)'))
                 ),
         ];
     }
+
 
 }

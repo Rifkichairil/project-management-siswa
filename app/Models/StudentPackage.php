@@ -10,7 +10,7 @@ class StudentPackage extends Model
     /** @use HasFactory<\Database\Factories\StudentPackageFactory> */
     use HasFactory;
 
-    protected $fillable = ['student_id','package_id','start_date','end_date','total_quota','used_quota','remaining_quota'];
+    protected $fillable = ['student_id','package_id','start_date','end_date','total_quota','used_quota','remaining_quota', 'status'];
 
     protected static function boot()
     {
@@ -75,22 +75,7 @@ class StudentPackage extends Model
             }
 
 
-            // ====== TYPE = MONTHLY ======
 
-            // if ($startDateChanged) {
-
-            //     // Jika mundur → tidak boleh update remaining
-            //     if ($model->start_date <= $old->start_date) {
-            //         $model->remaining_quota = $old->remaining_quota;
-            //         return;
-            //     }
-
-            //     // Jika start_date naik = perpanjangan bulan
-            //     $model->remaining_quota = ($old->remaining_quota ?? 0) + ($model->total_quota ?? 0);
-            //     return;
-            // }
-
-            // Default: tidak ada perubahan
             $model->remaining_quota = $old->remaining_quota;
         });
     }
