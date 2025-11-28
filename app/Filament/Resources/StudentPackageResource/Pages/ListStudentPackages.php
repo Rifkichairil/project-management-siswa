@@ -31,26 +31,28 @@ class ListStudentPackages extends ListRecords
         return [
             'all' => Tab::make('All'),
 
-            'perlu_topup' => Tab::make('Perlu Topup')
-                ->badge(
-                    StudentPackage::query()
-                        ->where('remaining_quota', '<=', 5)
-                        ->count()
-                )
-                ->badgeColor('danger') // merah
-                ->modifyQueryUsing(fn (Builder $query) =>
-                    $query->where('remaining_quota', '<=', 5)
-                ),
-
-            'aman' => Tab::make('Aman')
+            'sufficient_quota' => Tab::make('Sufficient Quota') // Aman
                 ->badge(
                     StudentPackage::query()
                         ->where('remaining_quota', '>', 5)
                         ->count()
                 )
+                ->badgeColor('success')
                 ->modifyQueryUsing(fn (Builder $query) =>
                     $query->where('remaining_quota', '>', 5)
                 ),
+
+            'low_quota' => Tab::make('Low Quota') // Perlu Topup
+                ->badge(
+                    StudentPackage::query()
+                        ->where('remaining_quota', '<=', 5)
+                        ->count()
+                )
+                ->badgeColor('danger')
+                ->modifyQueryUsing(fn (Builder $query) =>
+                    $query->where('remaining_quota', '<=', 5)
+                ),
         ];
     }
+
 }

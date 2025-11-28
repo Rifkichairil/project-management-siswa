@@ -193,7 +193,21 @@ class ClassScheduleResource extends Resource
                     default => 'secondary', // Opsional: Untuk status yang tidak didefinisikan
                 }),
         ])
-        ->filters([])
+        ->filters([
+            Tables\Filters\Filter::make('this_week')
+                ->label('Minggu Ini')
+                ->query(fn ($query) =>
+                    $query->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()])
+                ),
+
+            Tables\Filters\Filter::make('this_month')
+                ->label('Bulan Ini')
+                ->query(fn ($query) =>
+                    $query->whereMonth('date', now()->month)
+                        ->whereYear('date', now()->year)
+                ),
+        ])
+
         ->actions([
             Tables\Actions\EditAction::make()// ... (konfigurasi Edit Action)
                 ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')

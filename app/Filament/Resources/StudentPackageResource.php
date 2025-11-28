@@ -168,20 +168,20 @@ class StudentPackageResource extends Resource
                     ->label('Status')
                     ->getStateUsing(function ($record) {
                         if ($record->remaining_quota === null) {
-                            return 'Tidak ada data';
+                            return 'No Data';
                         }
 
                         return $record->remaining_quota <= 5
-                            ? 'Perlu Topup'
-                            : 'Aman';
+                            ? 'Low Quota'
+                            : 'Sufficient Quota';
                     })
                     ->colors([
-                        'danger' => fn ($state) => $state === 'Perlu Topup',
-                        'success' => fn ($state) => $state === 'Aman',
+                        'danger' => fn ($state) => $state === 'Low Quota',
+                        'success' => fn ($state) => $state === 'Sufficient Quota',
                     ])
                     ->icons([
-                        'heroicon-o-exclamation-circle' => 'Perlu Topup',
-                        'heroicon-o-check-circle' => 'Aman',
+                        'heroicon-o-exclamation-circle' => 'Low Quota',
+                        'heroicon-o-check-circle' => 'Sufficient Quota'
                     ]),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
