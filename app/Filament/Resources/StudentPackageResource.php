@@ -42,13 +42,34 @@ class StudentPackageResource extends Resource
                     ->label('Student')
                     ->relationship('student.user', 'name')
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    ->options(function () {
+                        return \App\Models\Student::with('user')
+                            ->orderBy(
+                                \App\Models\User::select('name')
+                                    ->whereColumn('users.id', 'students.user_id')
+                                    ->limit(1)
+                            )
+                            ->limit(5)
+                            ->get()
+                            ->mapWithKeys(fn ($student) => [
+                                $student->id => $student->user->name,
+                            ]);
+                    }),
 
                 Select::make('package_id')
                     ->relationship('package', 'name')
                     ->required()
                     ->searchable()
                     ->reactive()
+                    ->options(function () {
+                            return \App\Models\Package::limit(5)
+                                ->get()
+                                ->mapWithKeys(fn ($package) => [
+                                    $package->id => $package->name,
+                                ]);
+                        })
+
                     // ← JALAN SAAT EDIT (hydrate)
                     ->afterStateHydrated(function ($state, callable $set) {
                         if (!$state) return;
@@ -76,38 +97,7 @@ class StudentPackageResource extends Resource
                             // Bisa set end_date default untuk quota (misal sama dengan start_date)
                             $set('end_date', null);
                         }
-                    })
-                    ->rules([
-                        function ($get) use ($recordId) {
-                            return function (string $attribute, $value, \Closure $fail) use ($get, $recordId) {
-
-                                $studentId = $get('student_id');
-                                $packageId = $value;
-
-                                if (!$studentId || !$packageId) return;
-
-                                $newPackage = \App\Models\Package::find($packageId);
-                                if (!$newPackage) return;
-
-                                $newType = $newPackage->type;
-
-                                $query = \App\Models\StudentPackage::where('student_id', $studentId)
-                                    ->whereHas('package', function ($query) use ($newType) {
-                                        $query->where('type', $newType);
-                                    });
-
-                                // ⭐ SKIP DIRINYA SENDIRI SAAT EDIT
-                                if ($recordId) {
-                                    $query->where('id', '!=', $recordId);
-                                }
-
-                                if ($query->exists()) {
-                                    $typeName = $newType === 'quota' ? 'Kuota' : 'Bulanan';
-                                    $fail("Student ini sudah memiliki package dengan tipe {$typeName}.");
-                                }
-                            };
-                        },
-                    ]),
+                    }),
 
                 DatePicker::make('start_date')
                     ->required()
