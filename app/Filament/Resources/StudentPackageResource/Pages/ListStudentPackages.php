@@ -27,33 +27,57 @@ class ListStudentPackages extends ListRecords
     }
 
     public function getTabs(): array
-    {
-        return [
-            'all' => Tab::make('All'),
+{
+    return [
+        'all' => Tab::make('All'),
 
-            'sufficient_quota' => Tab::make('Sufficient Quota')
-                ->badge(
-                    StudentPackage::query()
-                        ->whereColumn('remaining_quota', '>', DB::raw('CEIL(total_quota / 2)')) // > 50%
-                        ->count()
-                )
-                ->badgeColor('success')
-                ->modifyQueryUsing(fn (Builder $query) =>
-                    $query->whereColumn('remaining_quota', '>', DB::raw('CEIL(total_quota / 2)'))
-                ),
+        // === Active & Quota Aman ===
+        'sufficient_quota' => Tab::make('Sufficient Quota')
+            ->badge(
+                StudentPackage::where('status', 'active')
+                    ->whereColumn('remaining_quota', '>', DB::raw('CEIL(total_quota / 2)'))
+                    ->count()
+            )
+            ->badgeColor('success')
+            ->modifyQueryUsing(fn ($query) =>
+                $query->where('status', 'active')
+                      ->whereColumn('remaining_quota', '>', DB::raw('CEIL(total_quota / 2)'))
+            ),
 
-            'low_quota' => Tab::make('Low Quota')
-                ->badge(
-                    StudentPackage::query()
-                        ->whereColumn('remaining_quota', '<=', DB::raw('CEIL(total_quota / 2)')) // <= 50%
-                        ->count()
-                )
-                ->badgeColor('danger')
-                ->modifyQueryUsing(fn (Builder $query) =>
-                    $query->whereColumn('remaining_quota', '<=', DB::raw('CEIL(total_quota / 2)'))
-                ),
-        ];
-    }
+        // === Active tetapi quota Low ===
+        'low_quota' => Tab::make('Low Quota')
+            ->badge(
+                StudentPackage::where('status', 'active')
+                    ->whereColumn('remaining_quota', '<=', DB::raw('CEIL(total_quota / 2)'))
+                    ->count()
+            )
+            ->badgeColor('danger')
+            ->modifyQueryUsing(fn ($query) =>
+                $query->where('status', 'active')
+                      ->whereColumn('remaining_quota', '<=', DB::raw('CEIL(total_quota / 2)'))
+            ),
+
+        // === Inactive Package ===
+        'inactive' => Tab::make('Inactive')
+            ->badge(
+                StudentPackage::where('status','inactive')->count()
+            )
+            ->badgeColor('secondary')
+            ->modifyQueryUsing(fn ($query) =>
+                $query->where('status','inactive')
+            ),
+
+        // === Expired Package ===
+        'expired' => Tab::make('Expired')
+            ->badge(
+                StudentPackage::where('status','expired')->count()
+            )
+            ->badgeColor('warning')
+            ->modifyQueryUsing(fn ($query) =>
+                $query->where('status','expired')
+            ),
+    ];
+}
 
 
 }

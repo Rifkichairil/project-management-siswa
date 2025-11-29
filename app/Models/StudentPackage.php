@@ -11,118 +11,78 @@ class StudentPackage extends Model
     /** @use HasFactory<\Database\Factories\StudentPackageFactory> */
     use HasFactory;
 
-    protected $fillable = ['student_id','package_id','start_date','end_date','total_quota','used_quota','remaining_quota', 'status'];
+    protected $fillable = ['student_id','package_id','start_date','end_date','total_quota','used_quota','remaining_quota', 'status' , 'old_package_to_deactivate'];
+    protected $old_package_to_deactivated; // bukan attribute database
 
 
     protected static function booted()
     {
-        /**
-         * ==============================
-         * 📍 ON PACKAGE CREATE (Topup/Upgrade/Downgrade)
-         * ==============================
-         */
+        // --- 1. LOGIKA SAAT DATA BARU DIBUAT (CREATING/UPSIZE/DOWNSIZE) ---
         static::creating(function ($model) {
-
-            $activePackage = self::where('student_id', $model->student_id)
+            // Cek apakah ada paket aktif sebelumnya untuk siswa yang sama
+            $activeOldPackage = StudentPackage::query()
+                ->where('student_id', $model->student_id)
                 ->where('status', 'active')
                 ->first();
+            // dd($activeOldPackage);
 
-            $package = Package::find($model->package_id);
+            $package = Package::whereId($model->package_id)->first();
 
-            // Jika sudah ada paket aktif sebelumnya → nonaktifkan & carry remaining
-            if ($activePackage) {
-
-                $prevRemaining = $activePackage->remaining_quota ?? 0;
-
-                $model->status          = 'active';
-                $model->total_quota     = $package->quota_classes;
-                $model->remaining_quota = $prevRemaining + $model->total_quota; // merge quota lama + baru
-                $model->start_date      = $model->start_date ?? now();
-                $model->end_date        = $model->end_date ?? Carbon::parse($model->start_date)->addMonth();
-
-                // nonaktifkan paket sebelumnya 🔥
-                $activePackage->update(['status' => 'inactive']);
-
+            // Jika ini adalah paket pertama siswa ATAU penggantian paket
+            if (!$activeOldPackage) {
+                // Logika Paket Baru (Pembelian Awal)
+                $model->remaining_quota = $model->total_quota;
             } else {
+                // Logika Penggabungan Kuota (Upsize/Downsize)
 
-                // First package (tidak ada paket sebelumnya)
-                $model->status          = 'active';
+                // 1. Ambil Sisa Kuota Lama
+                $oldRemainingQuota = $activeOldPackage->remaining_quota;
+
+                // 2. Hitung Kuota Baru (Selalu Ditambah)
+                // New Remaining = Total Baru + Sisa Lama
                 $model->total_quota     = $package->quota_classes;
-                $model->remaining_quota = $package->quota_classes;
-                $model->start_date      = $model->start_date ?? now();
-                $model->end_date        = $model->end_date ?? Carbon::parse($model->start_date)->addMonth();
+                $model->remaining_quota = $model->total_quota + $oldRemainingQuota;
+                $model->end_date        = Carbon::parse($model->start_date)->addMonth();
+
+                // 3. Nonaktifkan Paket Lama (Update status)
+                // Ini harus dilakukan setelah paket baru berhasil dibuat/disimpan
+                // Agar tidak terjadi race condition, kita tandai paket lama untuk di-update.
+                // Namun, karena kita ada di event 'creating', kita tunda ke event 'created'.
+                $model->old_package_to_deactivated = $activeOldPackage;
+
+                // Set status package baru menjadi ACTIVE
+                $model->status = 'active';
+            }
+
+            // Atur kuota terpakai menjadi 0 untuk paket yang baru dibuat
+            $model->used_quota = 0;
+
+            // Pastikan status default aktif jika belum diatur
+            if (empty($model->status)) {
+                 $model->status = 'active';
             }
         });
 
-        static::updating(function ($quota) {
-
-            if ($quota->getOriginal('status') !== 'active') return;
-
-            $old_remaining = $quota->getOriginal('remaining_quota');
-            $old_used      = $quota->getOriginal('used_quota');
-            $old_package   = $quota->getOriginal('package_id');
-
-            $new_package   = $quota->package_id; // input user
-            $package       = Package::find($new_package); // ambil data paket
-            $quota_amount  = $package->quota_classes; // quota yang didapat dari 1x pembelian paket baru
-
-            /*
-            |----------------------------------------------------------
-            | CASE 1 — TOP-UP (paket sama)
-            | package_id sama → user membeli ulang paketnya (not upgrade/downgrade)
-            |----------------------------------------------------------
-            */
-            if ($new_package == $old_package) {
-
-                $quota->status = 'inactive'; // matikan record lama
-
-                // buat record baru, total quota = paket quota, sisa lama ikut
-                self::create([
-                    'student_id'      => $quota->student_id,
-                    'package_id'      => $new_package,
-                    'start_date'      => now(),
-                    'end_date'        => now()->addMonth(),
-                    'total_quota'     => $quota_amount, // ✨ otomatis dari package
-                    'used_quota'      => 0,
-                    'remaining_quota' => $old_remaining + $quota_amount,
-                    'status'          => 'active'
+        // Event setelah data baru benar-benar tersimpan di DB
+        static::created(function ($model) {
+            // Nonaktifkan paket lama yang sudah ditandai
+            if (isset($model->old_package_to_deactivated)) {
+                $model->old_package_to_deactivated->update([
+                    'status' => 'inactive'
                 ]);
-
-                return false;
             }
-
-            /*
-            |----------------------------------------------------------
-            | CASE 2 — PAKET BERBEDA → dianggap upgrade/downgrade
-            |----------------------------------------------------------
-            | quota baru ditentukan dari package->quota_classes, bukan input
-            */
-            $new_total = $quota_amount;
-
-            // VALIDASI DOWNSIZE
-            if ($new_total < $old_used) {
-                throw new \Exception("Gagal downgrade! Usage ($old_used) lebih tinggi dari quota baru ($new_total).");
-            }
-
-            // nonaktifkan data lama
-            $quota->status = 'inactive';
-
-            // buat quota baru dengan paket berbeda
-            self::create([
-                'student_id'      => $quota->student_id,
-                'package_id'      => $new_package,
-                'start_date'      => now(),
-                'end_date'        => now()->addMonth(),
-                'total_quota'     => $new_total,
-                'used_quota'      => 0,
-                'remaining_quota' => $new_total + $old_remaining,
-                'status'          => 'active'
-            ]);
-
-            return false;
         });
 
+        // --- 2. LOGIKA SAAT DATA DIUBAH (HANYA KOREKSI/PENGURANGAN KUOTA) ---
+        static::updating(function (StudentPackage $package) {
+            // Logika untuk memastikan remaining quota terupdate jika total/used diubah
+            // Ini biasanya terjadi saat admin mengoreksi data secara manual.
 
+            // Jika Used Quota berubah, hitung ulang Remaining Quota
+            if ($package->isDirty('used_quota') || $package->isDirty('total_quota')) {
+                 $package->remaining_quota = $package->total_quota - $package->used_quota;
+            }
+        });
     }
                 // dd($originalRemaining, $originalQuota, $package->quota_classes, min($oldRemaining + $newQuota, $newQuota), ($oldRemaining - $newQuota));
 

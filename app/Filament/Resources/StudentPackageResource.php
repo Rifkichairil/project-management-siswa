@@ -154,30 +154,58 @@ class StudentPackageResource extends Resource
 
                 Tables\Columns\TextColumn::make('used_quota'),
                 Tables\Columns\TextColumn::make('remaining_quota'),
-                Tables\Columns\BadgeColumn::make('quota_status') // rename dari status_topup
+                Tables\Columns\BadgeColumn::make('quota_status')
                     ->label('Quota Status')
                     ->getStateUsing(function ($record) {
 
+                        // Jika paket tidak active → quota tidak relevan
+                        if ($record->status === 'inactive') {
+                            return 'Unavailable';
+                        }
+
+                        // Jika expired → quota dianggap tidak bisa dipakai
+                        if ($record->status === 'expired') {
+                            return 'Expired Quota';
+                        }
+
+                        // Jika data quota kosong
                         if ($record->remaining_quota === null || $record->total_quota === null) {
                             return 'No Data';
                         }
 
-                        // <= 50% dari total_quota → Low Quota
+                        // Normal behavior (active)
                         $threshold = (int) ceil($record->total_quota / 2);
-
                         return $record->remaining_quota <= $threshold
                             ? 'Low Quota'
                             : 'Sufficient Quota';
                     })
                     ->colors([
-                        'danger' => fn ($state) => $state === 'Low Quota',
-                        'success' => fn ($state) => $state === 'Sufficient Quota',
+                        'danger' => ['Low Quota', 'Expired Quota'],   // merah
+                        'secondary' => 'Unavailable',                // abu-abu
+                        'success' => 'Sufficient Quota',             // hijau
+                        'gray' => 'No Data',
                     ])
                     ->icons([
-                        'heroicon-o-exclamation-circle' => 'Low Quota',
-                        'heroicon-o-check-circle'      => 'Sufficient Quota',
+                        'heroicon-o-exclamation-circle' => ['Low Quota', 'Expired Quota'],
+                        'heroicon-o-minus-circle' => 'Unavailable',
+                        'heroicon-o-check-circle' => 'Sufficient Quota',
+                        'heroicon-o-question-mark-circle' => 'No Data',
                     ]),
-                Tables\Columns\TextColumn::make('status'),
+
+                // status badge tetap
+                Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
+                    ->colors([
+                        'success' => 'active',
+                        'danger'  => 'inactive',
+                        'warning' => 'expired',
+                    ])
+                    ->icons([
+                        'heroicon-o-check-circle'     => 'active',
+                        'heroicon-o-x-circle'         => 'inactive',
+                        'heroicon-o-exclamation-triangle' => 'expired',
+                    ])
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -220,5 +248,22 @@ class StudentPackageResource extends Resource
             // 'create' => Pages\CreateStudentPackage::route('/create'),
             // 'edit' => Pages\EditStudentPackage::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        // Ambil query dasar (termasuk filter berdasarkan teacher/admin jika ada)
+        $query = parent::getEloquentQuery();
+
+        // Prioritaskan Status 'ACTIVE'
+        // 'CASE WHEN status = "ACTIVE" THEN 0 ELSE 1 END'
+        //  - Jika status = ACTIVE, nilai sorting-nya adalah 0 (paling kecil = paling atas).
+        //  - Jika status != ACTIVE, nilai sorting-nya adalah 1 (di bawah yang 0).
+        $query->orderByRaw('CASE WHEN status = "ACTIVE" THEN 0 ELSE 1 END');
+
+        // Tambahkan urutan sekunder (misalnya, berdasarkan tanggal mulai terbaru)
+        $query->orderBy('start_date', 'desc');
+
+        return $query;
     }
 }
