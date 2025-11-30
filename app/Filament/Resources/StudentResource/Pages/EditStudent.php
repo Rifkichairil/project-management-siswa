@@ -13,6 +13,7 @@ class EditStudent extends EditRecord
 {
     protected static string $resource = StudentResource::class;
     protected $packageId;
+    protected $totalQouta;
 
     protected function getHeaderActions(): array
     {
@@ -33,6 +34,7 @@ class EditStudent extends EditRecord
 
         unset($data['name'], $data['email']);
         $this->packageId = $data['package_id'] ?? null;
+        $this->totalQouta = $data['total_quota'] ?? null;
 
         return $data;
     }
@@ -62,8 +64,8 @@ class EditStudent extends EditRecord
             StudentPackage::create([
                 'student_id'      => $student->id,
                 'package_id'      => $this->packageId, // 🔥 berhasil
-                'total_quota'     => $package->quota_classes ?? 0,
-                'remaining_quota' => $package->quota_classes ?? 0,
+                'total_quota'     => $package->totalQouta ?? 0,
+                'remaining_quota' => $package->totalQouta ?? 0,
                 'start_date'      => now(),
                 'end_date'        => now()->addMonth(),
             ]);
