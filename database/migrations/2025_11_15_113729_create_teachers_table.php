@@ -13,7 +13,10 @@ return new class extends Migration
     {
         Schema::create('teachers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained();
+            $table->foreignId('user_id')->constrained()
+                ->onDelete('cascade');
+            $table->enum('teaching_type', ['private', 'group', 'both'])
+                ->default('private');
             $table->string('expertise')->nullable();
             $table->string('curriculum')->nullable();
             $table->timestamps();

@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('class_reports', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_schedule_id')->constrained();
+            $table->foreignId('student_package_id')
+                ->nullable()
+                ->constrained();
             $table->string('topic')->nullable();
             $table->text('progress')->nullable();
             $table->text('notes')->nullable();

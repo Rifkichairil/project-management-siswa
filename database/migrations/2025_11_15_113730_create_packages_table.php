@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('packages', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->enum('type', ['quota', 'monthly']);
+            $table->enum('type', ['quota', 'monthly', 'group']);
+            $table->enum('class_type', ['private', 'group', 'both'])
+                ->default('private');
             $table->integer('quota_classes')->nullable();
             $table->integer('price');
             $table->timestamps();

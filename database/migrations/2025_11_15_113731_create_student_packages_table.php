@@ -18,7 +18,11 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->integer('total_quota')->nullable();
+            $table->integer('used_quota')->nullable();
             $table->integer('remaining_quota')->nullable();
+            $table->enum('status', ['active', 'inactive', 'expired'])
+                  ->default('active');
+            $table->integer('old_package_to_deactivate')->nullable();
             $table->timestamps();
         });
     }
