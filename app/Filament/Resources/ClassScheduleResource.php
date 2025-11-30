@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ClassScheduleResource\Pages;
 use App\Filament\Resources\ClassScheduleResource\RelationManagers;
 use App\Models\ClassSchedule;
+use App\Models\Subject;
 use App\Rules\CheckStudentQuota;
 use App\Rules\NoScheduleOverlap;
 use App\Rules\NoTeacherOverlap;
@@ -54,7 +55,7 @@ class ClassScheduleResource extends Resource
                                             ->whereColumn('users.id', 'students.user_id')
                                             ->limit(1)
                                     )
-                                    ->limit(3)
+                                    ->limit(10)
                                     ->get()
                                     ->mapWithKeys(fn ($student) => [
                                         $student->id => $student->user->name,
@@ -88,7 +89,7 @@ class ClassScheduleResource extends Resource
                                             ->whereColumn('users.id', 'teachers.user_id')
                                             ->limit(1)
                                     )
-                                    ->limit(3)
+                                    ->limit(10)
                                     ->get()
                                     ->mapWithKeys(fn ($student) => [
                                         $student->id => $student->user->name,
@@ -115,8 +116,11 @@ class ClassScheduleResource extends Resource
 
                         Select::make('subject_id')
                             ->label('Subject')
-                            ->relationship('subject', 'name')
+                            ->relationship('subject', 'name', function ($query) {
+                                $query->limit(5); // langsung ambil 5 data pertama
+                            })
                             ->searchable()
+                            ->preload() // preload data agar langsung tampil
                             ->required(),
                         DatePicker::make('date')
                             ->default(now())
@@ -156,6 +160,14 @@ class ClassScheduleResource extends Resource
                                             studentId: $get('student_id'),
                                             timeStart: $get('time_start'),
                                             // Kirim ID jika sedang Edit untuk diabaikan
+                                            ignoringId: $operation === 'edit' ? $get('id') : null
+                                        ),
+                                        fn (Get $get, string $operation) => new \App\Rules\ValidTeacherSchedule(
+                                            teacherId: $get('teacher_id'),
+                                            studentId: $get('student_id'),
+                                            timeStart: $get('time_start'),
+                                            timeEnd: $get('time_end'),
+                                            date: $get('date'),
                                             ignoringId: $operation === 'edit' ? $get('id') : null
                                         )
                                     ]),

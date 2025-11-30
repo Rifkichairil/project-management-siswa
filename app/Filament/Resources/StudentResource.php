@@ -70,34 +70,32 @@ class StudentResource extends Resource
                             ->maxLength(255),
                     ])->columns(2),
                       // ⬇️ Tambahan ini paling penting
-               Forms\Components\Section::make('First Package Assignment')
-    ->schema([
-        Forms\Components\Select::make('package_id')
-            ->label('Choose First Package')
-            ->options(Package::all()->mapWithKeys(fn($p) => [
-                $p->id => $p->name . " ({$p->type})"
-            ]))
-            ->reactive()
-            ->required(fn ($record) =>
-                $record === null || $record->activePackage === null
-            ),
+                Forms\Components\Section::make('First Package Assignment')
+                    ->schema([
+                        Forms\Components\Select::make('package_id')
+                            ->label('Choose First Package')
+                            ->options(Package::all()->mapWithKeys(fn($p) => [
+                                $p->id => $p->name . " ({$p->type})"
+                            ]))
+                            ->reactive()
+                            ->required(fn ($record) =>
+                                $record === null || $record->activePackage === null
+                            ),
 
-        Forms\Components\TextInput::make('total_quota')
-            ->label('Total Quota')
-            ->numeric()
-            ->visible(fn ($get) =>
-                ($pkg = Package::find($get('package_id'))) &&
-                in_array($pkg->type, ['monthly','group'])
-            ),
-    ])
-    ->visible(fn ($record) =>
-        // Create → selalu tampil
-        $record === null ||
-        // Edit → tampil hanya jika belum punya paket aktif
-        $record->activePackage === null
-    ),
-
-
+                        Forms\Components\TextInput::make('total_quota')
+                            ->label('Total Quota')
+                            ->numeric()
+                            ->visible(fn ($get) =>
+                                ($pkg = Package::find($get('package_id'))) &&
+                                in_array($pkg->type, ['monthly','group'])
+                            ),
+                    ])
+                    ->visible(fn ($record) =>
+                        // Create → selalu tampil
+                        $record === null ||
+                        // Edit → tampil hanya jika belum punya paket aktif
+                        $record->activePackage === null
+                    ),
             ]);
     }
 

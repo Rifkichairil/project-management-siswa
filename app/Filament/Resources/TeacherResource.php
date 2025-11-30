@@ -82,7 +82,8 @@ class TeacherResource extends Resource
                     ->badge() // Wajib menggunakan badge() untuk mewarnai teks di dalamnya
                     ->color(fn (string $state): string => match ($state) {
                         'private' => 'primary', // Hijau
-                        'group' => 'secondary' // Biru (Warna default utama Filament)
+                        'group' => 'secondary', // Biru (Warna default utama Filament)
+                        'both' => 'secondary' // Biru (Warna default utama Filament)
                     }),
 
                 Tables\Columns\TextColumn::make('user.email')
