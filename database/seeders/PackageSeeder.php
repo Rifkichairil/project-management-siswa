@@ -15,21 +15,21 @@ class PackageSeeder extends Seeder
     {
         $packages = [
             [
-                'name' => '4x Classes',
+                'name' => '10x Classes',
                 'type' => 'quota',
-                'quota_classes' => 4,
+                'quota_classes' => 10,
                 'price' => 200000,
             ],
             [
-                'name' => '8x Classes',
+                'name' => '20x Classes',
                 'type' => 'quota',
-                'quota_classes' => 8,
+                'quota_classes' => 20,
                 'price' => 380000,
             ],
             [
-                'name' => '12x Classes',
+                'name' => '30x Classes',
                 'type' => 'quota',
-                'quota_classes' => 12,
+                'quota_classes' => 30,
                 'price' => 540000,
             ],
             [
