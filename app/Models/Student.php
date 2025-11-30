@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
 
 class Student extends Model
 {
@@ -19,7 +20,13 @@ class Student extends Model
 
     public function studentPackages()
     {
-    return $this->hasMany(StudentPackage::class);
+        return $this->hasMany(StudentPackage::class);
+    }
+
+    // Hanya 1 aktif
+    public function activePackage()
+    {
+        return $this->hasOne(StudentPackage::class)->where('status', 'active');
     }
 
     public function classSchedules()

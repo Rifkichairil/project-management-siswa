@@ -10,6 +10,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -56,6 +57,15 @@ class TeacherResource extends Resource
 
                         Forms\Components\TextInput::make('curriculum')
                             ->required(),
+
+                        Forms\Components\Select::make('teaching_type')
+                            ->label('Teaching Type')
+                            ->options([
+                                'private' => 'Private Class',
+                                'group'   => 'Group Class'
+                            ])
+                            ->required()
+                            ->native(false)
                     ])->columns(2),
             ]);
     }
@@ -68,6 +78,12 @@ class TeacherResource extends Resource
                     ->label('Name')
                     ->sortable()
                     ->searchable(),
+                TextColumn::make('teaching_type')
+                    ->badge() // Wajib menggunakan badge() untuk mewarnai teks di dalamnya
+                    ->color(fn (string $state): string => match ($state) {
+                        'private' => 'primary', // Hijau
+                        'group' => 'secondary' // Biru (Warna default utama Filament)
+                    }),
 
                 Tables\Columns\TextColumn::make('user.email')
                     ->label('Email'),

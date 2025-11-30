@@ -3,36 +3,67 @@
 namespace App\Filament\Resources\StudentResource\Pages;
 
 use App\Filament\Resources\StudentResource;
+use App\Models\Package;
+use App\Models\StudentPackage;
 use App\Models\User;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\DB;
 
 class CreateStudent extends CreateRecord
 {
     protected static string $resource = StudentResource::class;
-
+    protected $packageId;
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => bcrypt($data['password']),
-            'role'     => 'student',
-        ]);
+        DB::beginTransaction();
 
-        $data['user_id'] = $user->id;
+        try {
+            // ⛳ Create User
+            $user = User::create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => bcrypt($data['password']),
+            ]);
 
-        unset($data['name'], $data['email'], $data['password']);
+            // Inject user
+            $data['user_id'] = $user->id;
 
-        return $data;
+            // simpan package ke property AGAR BISA DIPAKAI di afterCreate()
+            $this->packageId = $data['package_id'] ?? null;
+
+            // buang field yang tidak perlu masuk table students
+            unset($data['name'], $data['email'], $data['password']);
+
+            DB::commit();
+            return $data;
+
+        } catch (\Throwable $e){
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     protected function afterCreate(): void
     {
+        // record Student sudah ke-create otomatis oleh Filament
+        $student = $this->record;
+        $package = Package::whereId($this->packageId)->first();
+        // ⬇ PAKAI PROPERTY DI SINI
+        StudentPackage::create([
+            'student_id'      => $student->id,
+            'package_id'      => $this->packageId, // 🔥 berhasil
+            'total_quota'     => $package->quota_classes ?? 0,
+            'remaining_quota' => $package->quota_classes ?? 0,
+            'start_date'      => now(),
+            'end_date'        => now()->addMonth(),
+        ]);
+
         Notification::make()
-            ->title('Student berhasil dibuat!')
+            ->title('Student has been successfully created!')
             ->success()
             ->send();
+
     }
 }

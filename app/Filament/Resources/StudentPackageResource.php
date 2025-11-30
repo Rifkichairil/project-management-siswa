@@ -223,11 +223,10 @@ class StudentPackageResource extends Resource
             ])
             ->actions([
                 // Tables\Actions\EditAction::make(),
-                 Tables\Actions\EditAction::make()
-                    ->mutateRecordDataUsing(function (array $data): array {
-                        return $data;
-                    })
-                    ->modalWidth('5xl'),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn ($record) => $record->status === 'active')
+                    ->modalWidth('5xl')
+
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),

@@ -23,32 +23,44 @@ class PackageResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\TextInput::make('name')
-                    ->required()
-                    ->maxLength(255),
+       return $form
+        ->schema([
+            Forms\Components\TextInput::make('name')
+                ->required()
+                ->maxLength(255),
 
-                Forms\Components\Select::make('type')
-                    ->options([
-                        'quota' => 'Quota',
-                        'monthly' => 'Monthly',
-                    ])
-                    ->required()
-                    ->reactive()   // <--- WAJIB agar UI bisa update
-                    ->native(false),
+            Forms\Components\Select::make('type')
+                ->options([
+                    'quota'     => 'Quota',
+                    'monthly'   => 'Monthly',
+                    'group'     => 'Group',
+                ])
+                ->required()
+                ->reactive()        // supaya quota_classes bisa hide/show
+                ->native(false),
 
-                Forms\Components\TextInput::make('quota_classes')
-                    ->numeric()
-                    ->minValue(0)
-                    ->nullable()
-                    ->visible(fn ($get) => $get('type') === 'quota'),
+            // Forms\Components\Select::make('class_type')
+            //     ->label('Class Type')
+            //     ->options([
+            //         'private' => 'Private Class',
+            //         'group'   => 'Group Class'
+            //     ])
+            //     ->required()
+            //     ->native(false),
 
-                Forms\Components\TextInput::make('price')
-                    ->numeric()
-                    ->minValue(0)
-                    ->required(),
-            ]);
+            Forms\Components\TextInput::make('quota_classes')
+                ->numeric()
+                ->minValue(0)
+                ->nullable()
+                ->visible(fn ($get) => $get('type') === 'quota') // tampil hanya jika type=quota
+                ->label('Quota Classes'),
+
+            Forms\Components\TextInput::make('price')
+                ->numeric()
+                ->minValue(0)
+                ->required(),
+        ]);
+
     }
 
     public static function table(Table $table): Table
@@ -61,10 +73,17 @@ class PackageResource extends Resource
 
                 Tables\Columns\BadgeColumn::make('type')
                     ->colors([
-                        'primary' => 'quota',
-                        'success' => 'monthly',
+                        'primary'   => 'quota',
+                        'success'   => 'monthly',
+                        'secondary' => 'group',
                     ])
                     ->sortable(),
+                // Tables\Columns\BadgeColumn::make('class_type')
+                //     ->colors([
+                //         'primary' => 'Private',
+                //         'success' => 'Group',
+                //     ])
+                //     ->sortable(),
 
                 Tables\Columns\TextColumn::make('quota_classes')
                     ->label('Quota Classes')

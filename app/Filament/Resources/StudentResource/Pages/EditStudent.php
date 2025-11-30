@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\StudentResource\Pages;
 
 use App\Filament\Resources\StudentResource;
+use App\Models\Package;
+use App\Models\StudentPackage;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -10,6 +12,7 @@ use Filament\Resources\Pages\EditRecord;
 class EditStudent extends EditRecord
 {
     protected static string $resource = StudentResource::class;
+    protected $packageId;
 
     protected function getHeaderActions(): array
     {
@@ -20,6 +23,7 @@ class EditStudent extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        // dd($data);
         $user = $this->record->user;
 
         $user->update([
@@ -28,6 +32,7 @@ class EditStudent extends EditRecord
         ]);
 
         unset($data['name'], $data['email']);
+        $this->packageId = $data['package_id'] ?? null;
 
         return $data;
     }
@@ -47,8 +52,24 @@ class EditStudent extends EditRecord
         ]);
     }
 
-    protected function afterUpdate(): void
+    protected function afterSave(): void
     {
+        $student = $this->record;
+        if ($this->packageId) {
+            $package = Package::whereId($this->packageId)->first();
+
+            // ⬇ PAKAI PROPERTY DI SINI
+            StudentPackage::create([
+                'student_id'      => $student->id,
+                'package_id'      => $this->packageId, // 🔥 berhasil
+                'total_quota'     => $package->quota_classes ?? 0,
+                'remaining_quota' => $package->quota_classes ?? 0,
+                'start_date'      => now(),
+                'end_date'        => now()->addMonth(),
+            ]);
+
+        }
+
         Notification::make()
             ->title('Student berhasil diupdate!')
             ->success()

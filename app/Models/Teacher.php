@@ -10,7 +10,7 @@ class Teacher extends Model
     /** @use HasFactory<\Database\Factories\TeacherFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id','expertise','curriculum'];
+    protected $fillable = ['user_id','teaching_type','expertise','curriculum'];
 
     public function user()
     {
