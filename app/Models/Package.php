@@ -10,7 +10,7 @@ class Package extends Model
     /** @use HasFactory<\Database\Factories\PackageFactory> */
     use HasFactory;
 
-    protected $fillable = ['name','type','class_type','quota_classes','price'];
+    protected $fillable = ['name','type','quota_classes','price'];
 
     public function studentPackages()
     {

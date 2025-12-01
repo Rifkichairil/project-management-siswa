@@ -69,6 +69,17 @@ class StudentResource extends Resource
                         Forms\Components\TextInput::make('parent_contact')
                             ->label('Parent Contact')
                             ->maxLength(255),
+                        Forms\Components\Select::make('payment_status')
+                            ->label('Payment Status')
+                            ->options([
+                                'unpaid'  => 'Unpaid',
+                                'pending' => 'Pending',
+                                'paid'    => 'Paid',
+                                'upfront' => 'Upfront',
+                            ])
+                            ->required()
+                            ->default('unpaid')
+                            ->native(false),
                     ])->columns(2),
                       // ⬇️ Tambahan ini paling penting
                 Forms\Components\Section::make('First Package Assignment')

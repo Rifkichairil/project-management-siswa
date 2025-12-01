@@ -48,6 +48,7 @@ class EditStudent extends EditRecord
             'email'         => $student->user->email,
             'password'      => '',
             'school'        => $student->school,
+            'payment_status'=> $student->payment_status,
             'grade'         => $student->grade,
             'parent_name'   => $student->parent_name,
             'parent_contact'=> $student->parent_contact,

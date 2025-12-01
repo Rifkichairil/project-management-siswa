@@ -16,6 +16,12 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()
                 ->onDelete('cascade'); // 🔥 user akan ikut kehapus
             $table->string('school')->nullable();
+            $table->enum('payment_status', [
+                'unpaid',
+                'pending',
+                'paid',
+                'upfront'
+            ])->default('unpaid');
             $table->string('grade')->nullable();
             $table->string('parent_name')->nullable();
             $table->string('parent_contact')->nullable();
