@@ -64,9 +64,10 @@ class TeacherResource extends Resource
                                 'private' => 'Private Class',
                                 'group'   => 'Group Class'
                             ])
+                            ->preload()
+                            ->default(fn ($record) => $record?->teaching_type) // Penting
                             ->multiple()        // <--- ini bikin bisa pilih lebih dari satu
                             ->required()
-                            ->native(false)    // biar tampilannya select2-like
                     ])->columns(2),
             ]);
     }
@@ -82,8 +83,8 @@ class TeacherResource extends Resource
                 TextColumn::make('teaching_type')
                     ->badge() // Wajib menggunakan badge() untuk mewarnai teks di dalamnya
                     ->color(fn (string $state): string => match ($state) {
-                        'private' => 'primary', // Hijau
-                        'group' => 'secondary', // Biru (Warna default utama Filament)
+                        'private' => 'success', // Hijau
+                        'group' => 'primary', // Biru (Warna default utama Filament)
                         'both' => 'secondary' // Biru (Warna default utama Filament)
                     }),
 
@@ -118,8 +119,8 @@ class TeacherResource extends Resource
     {
         return [
             'index' => Pages\ListTeachers::route('/'),
-            // 'create' => Pages\CreateTeacher::route('/create'),
-            // 'edit' => Pages\EditTeacher::route('/{record}/edit'),
+            'create' => Pages\CreateTeacher::route('/create'),
+            'edit' => Pages\EditTeacher::route('/{record}/edit'),
         ];
     }
 }

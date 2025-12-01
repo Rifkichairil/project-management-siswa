@@ -40,11 +40,12 @@ class EditTeacher extends EditRecord
         $teacher = $this->record;
 
         $this->form->fill([
-            'name'       => $teacher->user->name,
-            'email'      => $teacher->user->email,
-            'password'   => '',
-            'expertise'  => $teacher->expertise,
-            'curriculum' => $teacher->curriculum,
+            'name'          => $teacher->user->name,
+            'email'         => $teacher->user->email,
+            'password'      => '',
+            'teaching_type' => $teacher->teaching_type,
+            'expertise'     => $teacher->expertise,
+            'curriculum'    => $teacher->curriculum,
         ]);
     }
 

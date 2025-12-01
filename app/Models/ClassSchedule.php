@@ -18,16 +18,22 @@ class ClassSchedule extends Model
     // --- Logika Event (Di dalam booted()) ---
     protected static function booted()
     {
+        static::updated(function ($model) {
+            $model->status = 'scheduled';
+        });
+
         // Event UPDATED: Dijalankan setelah data berhasil disimpan dan ada perubahan.
         static::updated(function (ClassSchedule $schedule) {
 
+            $new = $schedule->getChanges(); // setelah update
+
             // Logika: Potong kuota hanya jika status BARU adalah 'completed'
             // DAN status LAMA BUKAN 'completed' (Mencegah pemotongan ganda)
-            if ($schedule->status === 'completed' && $schedule->getOriginal('status') !== 'completed') {
+            if ($new['status'] === 'completed' && $schedule->getOriginal('status') !== 'completed') {
 
                 // 1. Hitung unit kuota yang akan dipotong
-                $quotaMinutesUsed = $schedule->getQuotaMinutesUsed();
-                $quotaUnitsToDecrement = $quotaMinutesUsed / 60; // Konversi ke unit/jam (misal: 120 menit -> 2 unit)
+                $quotaMinutesUsed       = $schedule->getQuotaMinutesUsed();
+                $quotaUnitsToDecrement  = $quotaMinutesUsed / 60; // Konversi ke unit/jam (misal: 120 menit -> 2 unit)
 
                 // 2. Cari paket siswa (asumsi ambil kuota terbesar/terbaru)
                 $package = StudentPackage::where('student_id', $schedule->student_id)
@@ -90,19 +96,21 @@ class ClassSchedule extends Model
     /**
      * Custom method untuk handle complete class + save report
      */
-    public function completeClass(array $data)
+    public function completeClass(array $data, $record)
     {
-        return DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data, $record) {
+            // dd($record->status,$record->student->activePackage->id, $data['classReport'] +['student_package_id' =>$record->student->activePackage->id ]);
+
             // 1. Update status parent
-            $this->update([
-                'status' => $data['status']
-            ]);
+            // $this->update([
+            //     'status' => 'completed'
+            // ]);
 
             // 2. Update atau Create report (hanya jika completed)
-            if ($data['status'] === 'completed' && isset($data['classReport'])) {
+            if (isset($data['classReport'])) {
                 $this->classReport()->updateOrCreate(
                     ['class_schedule_id' => $this->id], // Kunci pencarian
-                    $data['classReport']                // Data yang disimpan
+                    $data['classReport'] + ['student_package_id' => $record->student->activePackage->id ] // default add
                 );
             }
         });

@@ -48,7 +48,7 @@ class AdminPanelProvider extends PanelProvider
                 StudentsLowQuota::class,
 
             ])
-            ->brandName('Private Lesson Portal')
+            ->brandName('Saung Belajar')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

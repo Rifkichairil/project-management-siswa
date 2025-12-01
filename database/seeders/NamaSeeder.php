@@ -17,7 +17,7 @@ class NamaSeeder extends Seeder
         $faker = Faker::create();
 
         // === Generate 5 Teachers ===
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 6; $i <= 10; $i++) {
             User::create([
                 'name'     => $faker->name(),
                 'email'    => "teacher{$i}@example.com",
@@ -28,7 +28,7 @@ class NamaSeeder extends Seeder
         }
 
         // === Generate 5 Students ===
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 6; $i <= 10; $i++) {
             User::create([
                 'name'     => $faker->name(),
                 'email'    => "student{$i}@example.com",

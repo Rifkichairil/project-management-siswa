@@ -125,7 +125,7 @@ class ClassScheduleResource extends Resource
                         DatePicker::make('date')
                             ->default(now())
                             ->required(),
-                        Grid::make(3)
+                        Grid::make(2)
                             ->schema([
                                 // Kolom Time Start:
                                 TimePicker::make('time_start')
@@ -181,15 +181,15 @@ class ClassScheduleResource extends Resource
                                         //     ignoringId: $operation === 'edit' ? $get('id') : null
                                         // )
                                     ]),
-                                Select::make('status')
-                                    ->options([
-                                        'scheduled' => 'Scheduled',
-                                        'completed' => 'Completed',
-                                        'cancelled' => 'Cancelled',
-                                    ])
-                                    ->required()
-                                    ->reactive()
-                                    ->hiddenOn('edit'),
+                                // Select::make('status')
+                                //     ->options([
+                                //         'scheduled' => 'Scheduled',
+                                //         'completed' => 'Completed',
+                                //         'cancelled' => 'Cancelled',
+                                //     ])
+                                //     ->required()
+                                //     ->reactive()
+                                //     ->hiddenOn('edit'),
                                 ]),
                     ]),
             ]);
@@ -244,20 +244,11 @@ class ClassScheduleResource extends Resource
                     ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
                     // 1. Mount Data (Agar field terisi jika sudah pernah di-input sebelumnya)
                     ->mountUsing(fn (ClassSchedule $record, Forms\ComponentContainer $form) => $form->fill([
-                        'status' => $record->status, // Ambil status saat ini
-                        'classReport' => $record->classReport?->toArray(), // Load data report jika ada
+                        'status'        => $record->status, // Ambil status saat ini
+                        'classReport'   => $record->classReport?->toArray(), // Load data report jika ada
                     ]))
                     // 2. Schema Form (Seperti kode Anda)
                     ->form([
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'scheduled' => 'Scheduled',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->required()
-                            ->live(), // Gunakan live untuk reaktivitas
-
                         Forms\Components\Section::make('Class Report')
                             ->schema([
                                 Forms\Components\TextInput::make('classReport.topic')
@@ -274,13 +265,14 @@ class ClassScheduleResource extends Resource
                                     ->label('Teacher Feedback'),
                             ])
                             // Visible hanya jika status completed
-                            ->visible(fn (Forms\Get $get) => $get('status') === 'completed')
+                            // ->visible(fn (Forms\Get $get) => $get('status') === 'completed')
                             ->columns(2),
         ])
         // 3. Logic Penyimpanan (Action Handler)
         ->action(function (ClassSchedule $record, array $data) {
+            $record->update(['status' => 'completed']);
             // CUKUP 1 BARIS INI SAJA
-            $record->completeClass($data);
+            $record->completeClass($data, $record);
 
             // Optional: Kasih notifikasi
             Notification::make()->title('Class completed successfully')->success()->send();

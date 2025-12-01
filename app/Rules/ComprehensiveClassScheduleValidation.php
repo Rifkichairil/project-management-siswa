@@ -5,6 +5,7 @@ namespace App\Rules;
 use App\Models\ClassSchedule;
 use App\Models\Student;
 use App\Models\Teacher;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
@@ -23,16 +24,20 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
 
     public function __construct(int $teacherId, int $studentId, string $timeStart, string $date, ?int $ignoringId = null)
     {
-        $this->teacherId = $teacherId;
-        $this->studentId = $studentId;
-        $this->timeStart = $timeStart;
-        $this->date = $date;
+        $this->teacherId  = $teacherId;
+        $this->studentId  = $studentId;
+        $this->timeStart  = $timeStart;
+        $this->date       = $date;
         $this->ignoringId = $ignoringId;
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $timeEnd = $value;
+
+        $timeStart  = Carbon::parse($this->timeStart)->format('H:i:s');
+        $timeEnd    = Carbon::parse($value)->format('H:i:s');
+
+        // dd($timeStart, $timeEnd);
 
         // 1. Ambil Data Esensial
         $teacher = Teacher::find($this->teacherId);
@@ -79,10 +84,10 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
                 $q->where('teacher_id', $this->teacherId)
                   ->orWhere('student_id', $this->studentId);
             })
-            ->where(function ($q) use ($timeEnd) {
+            ->where(function ($q) use ($timeEnd, $timeStart) {
                 // Logika Overlapping Waktu: (New Start < Existing End) AND (New End > Existing Start)
                 $q->where('time_start', '<', $timeEnd)
-                  ->where('time_end', '>', $this->timeStart);
+                  ->where('time_end', '>', $timeStart);
             })
             ->when($this->ignoringId, function ($query, $id) {
                 return $query->where('id', '!=', $id);
@@ -117,9 +122,12 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
                 // KASUS B: GROUP CLASS (VR 3: Harus sama persis jika ingin bergabung)
                 // Pengecekan ini hanya tercapai jika keduanya BUKAN Private, artinya keduanya Group.
                 if ($existingPackageType === 'group' && $packageType === 'group') {
+                    // dd($existingPackageType, $packageType);
 
                     // Student Group hanya bisa bergabung jika waktu kelas SAMA PERSIS.
-                    if (!($schedule->time_start === $this->timeStart && $schedule->time_end === $timeEnd)) {
+                    if (!($schedule->time_start === $timeStart && $schedule->time_end === $timeEnd)) {
+                        dd($schedule->time_start === $timeStart , $schedule->time_end === $timeEnd);
+                        dd(!($schedule->time_start === $timeStart && $schedule->time_end === $timeEnd));
                         $fail("VR 3 GAGAL: Student Group harus bergabung ke jadwal Group yang SAMA PERSIS waktunya dengan kelas yang sudah ada.");
                         return;
                     }
