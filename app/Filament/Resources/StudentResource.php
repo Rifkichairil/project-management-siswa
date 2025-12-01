@@ -43,15 +43,15 @@ class StudentResource extends Resource
                             ->label('Email')
                             ->email()
                             ->required(),
-                        Forms\Components\TextInput::make('password')
-                            ->label('Password')
-                            ->password()
-                            ->required(fn ($livewire) => $livewire instanceof Pages\CreateStudent)
-                            ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent)
-                            ->visibleOn('create') // ⬅⬅⬅ penting!
-                            ->maxLength(255),
+                        // Forms\Components\TextInput::make('password')
+                        //     ->label('Password')
+                        //     ->password()
+                        //     ->required(fn ($livewire) => $livewire instanceof Pages\CreateStudent)
+                        //     ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent)
+                        //     ->visibleOn('create') // ⬅⬅⬅ penting!
+                        //     ->maxLength(255),
 
-                    ])->columns(3), // <<<<<<<<<< GRID 2 KOLOM
+                    ])->columns(2), // <<<<<<<<<< GRID 2 KOLOM
 
                 // student fields
                 Forms\Components\Section::make('Student Details')
