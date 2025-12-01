@@ -8,6 +8,7 @@ use App\Filament\Resources\TeacherResource\RelationManagers\ClassScheduleRelatio
 use App\Models\Teacher;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
@@ -100,6 +101,47 @@ class TeacherResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                // -----------------------------------------------------
+                // 1. ACTION: Deactivate User (Nonaktifkan Pengguna)
+                // -----------------------------------------------------
+                Tables\Actions\Action::make('deactivate')
+                    ->label('Nonaktifkan')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record): bool => $record->user->isActive ?? true) // Tampilkan jika status aktif
+                    ->requiresConfirmation()
+                    ->modalHeading('Nonaktifkan Akun Pengguna?')
+                    ->modalDescription('Apakah Anda yakin ingin menonaktifkan akun ini? Pengguna tidak akan bisa login.')
+                    ->action(function ($record) {
+                        // Asumsi: status active disimpan di model User
+                        $record->user->update(['isActive' => false]);
+
+                        Notification::make()
+                            ->title('Pengguna Berhasil Dinonaktifkan')
+                            ->success()
+                            ->send();
+                    }),
+
+                // -----------------------------------------------------
+                // 2. ACTION: Activate User (Aktifkan Pengguna)
+                // -----------------------------------------------------
+                Tables\Actions\Action::make('activate')
+                    ->label('Aktifkan')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record): bool => !($record->user->isActive ?? true)) // Tampilkan jika status tidak aktif
+                    ->requiresConfirmation()
+                    ->modalHeading('Aktifkan Akun Pengguna?')
+                    ->modalDescription('Apakah Anda yakin ingin mengaktifkan akun ini? Pengguna akan dapat login kembali.')
+                    ->action(function ($record) {
+                        // Asumsi: status active disimpan di model User
+                        $record->user->update(['isActive' => true]);
+
+                        Notification::make()
+                            ->title('Pengguna Berhasil Diaktifkan')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

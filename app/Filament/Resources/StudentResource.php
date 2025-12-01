@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers;
+use App\Models\ClassReport;
 use App\Models\Package;
 use App\Models\Student;
 use Filament\Forms;
@@ -12,7 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Barryvdh\DomPDF\Facade\Pdf;
-
+use Filament\Notifications\Notification;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -126,18 +127,56 @@ class StudentResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
                 Action::make('downloadPdf')
                     ->label('PDF')
                     ->icon('heroicon-o-document-text')
-                    ->action(function ($record) {
-                        // dd($record->user->name); // test dulu
-                        $totalPackage   = $record->studentPackages?->sum('total_quota') ?? 0;
-                        $usedQuota      = $record->studentPackages?->sum('used_quota') ?? 0;
+                    ->modalHeading('Download PDF Report')
+                    ->visible(fn ($record): bool => $record->user->isActive ?? true)
+                    ->modalDescription('Pilih package yang ingin digunakan untuk generate PDF.')
+                    ->form([
+                        Forms\Components\Select::make('package_id')
+                            ->label('Select Package')
+                            ->options(function ($record) {
+                                return $record->studentPackages()
+                                    ->orderBy('created_at', 'DESC')
+                                    ->get()
+                                    ->mapWithKeys(fn($p) => [
+                                        $p->id => "Package #{$p->id} — Total: {$p->total_quota} | Used: {$p->used_quota} | Status Package: {$p->status}"
+                                    ]);
+                            })
+                            ->searchable()
+                            ->required()
+                            ->native(false),
+                    ])
+                    ->action(function ($record, array $data) {
+
+                        // dd($record, $data);
+
+                        // Ambil package berdasarkan pilihan user
+                        $package    = $record->studentPackages()->find($data['package_id']);
+                        $startDate  = $package->start_date;
+                        $endDate    = $package->end_date;
+
+                        // Jika user pilih package yg tidak ditemukan
+                        if (!$package) {
+                            Notification::make()
+                                ->title('Invalid package selected.')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        // Hitung quota
+                        $totalPackage   = $package->total_quota;
+                        $usedQuota      = $package->used_quota;
                         $remainingQuota = $totalPackage - $usedQuota;
 
-                        $classHistory = $record->classSchedules()
-                            ->with(['classReport', 'teacher', 'subject'])
-                            ->where('status', 'completed')
+                        $classHistory = ClassReport::with(
+                                'classSchedule',
+                                'studentPackage'
+                            )
+                            ->where('student_package_id', $data['package_id'])
                             ->get();
 
                         $pdf = Pdf::loadView('reports.student', [
@@ -146,16 +185,14 @@ class StudentResource extends Resource
                             'totalPackage'   => $totalPackage,
                             'usedQuota'      => $usedQuota,
                             'remainingQuota' => $remainingQuota,
+                            'package'        => $package,
                         ]);
 
                         return response()->streamDownload(
                             fn () => print($pdf->output()),
-                            'Report-' . $record->user->name . '-' . now()->format('Y-m-d') . '.pdf'
+                            "Report-{$record->user->name}-{$package->id}-" . now()->format('Y-m-d') . '.pdf'
                         );
                     }),
-
-
-
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

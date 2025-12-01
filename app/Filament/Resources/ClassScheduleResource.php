@@ -231,53 +231,51 @@ class ClassScheduleResource extends Resource
         ])
 
         ->actions([
-            Tables\Actions\EditAction::make()// ... (konfigurasi Edit Action)
-                ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
-                ->after(function ($livewire) {
-                    // Memicu event refresh setelah action Edit berhasil
-                    $livewire->dispatch('refreshTabsAndTable');
-                }),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
+                    ->after(fn ($livewire) => $livewire->dispatch('refreshTabsAndTable')),
+
                 Action::make('complete_class')
                     ->label('Complete Class')
                     ->icon('heroicon-m-check-circle')
                     ->color('success')
                     ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
-                    // 1. Mount Data (Agar field terisi jika sudah pernah di-input sebelumnya)
-                    ->mountUsing(fn (ClassSchedule $record, Forms\ComponentContainer $form) => $form->fill([
-                        'status'        => $record->status, // Ambil status saat ini
-                        'classReport'   => $record->classReport?->toArray(), // Load data report jika ada
-                    ]))
-                    // 2. Schema Form (Seperti kode Anda)
+                    ->mountUsing(fn (ClassSchedule $record, Forms\ComponentContainer $form) =>
+                        $form->fill([
+                            'status'      => $record->status,
+                            'classReport' => $record->classReport?->toArray(),
+                        ])
+                    )
                     ->form([
                         Forms\Components\Section::make('Class Report')
                             ->schema([
-                                Forms\Components\TextInput::make('classReport.topic')
-                                    ->label('Topic')
-                                    ->required(fn (Forms\Get $get) => $get('status') === 'completed'),
-
-                                Forms\Components\Textarea::make('classReport.progress')
-                                    ->label('Progress'),
-
-                                Forms\Components\Textarea::make('classReport.notes')
-                                    ->label('Notes'),
-
-                                Forms\Components\Textarea::make('classReport.teacher_feedback')
-                                    ->label('Teacher Feedback'),
+                                Forms\Components\TextInput::make('classReport.topic')->label('Topic'),
+                                Forms\Components\Textarea::make('classReport.progress')->label('Progress'),
+                                Forms\Components\Textarea::make('classReport.notes')->label('Notes'),
+                                Forms\Components\Textarea::make('classReport.teacher_feedback')->label('Teacher Feedback'),
                             ])
-                            // Visible hanya jika status completed
-                            // ->visible(fn (Forms\Get $get) => $get('status') === 'completed')
                             ->columns(2),
-        ])
-        // 3. Logic Penyimpanan (Action Handler)
-        ->action(function (ClassSchedule $record, array $data) {
-            $record->update(['status' => 'completed']);
-            // CUKUP 1 BARIS INI SAJA
-            $record->completeClass($data, $record);
+                    ])
+                    ->action(function (ClassSchedule $record, array $data) {
+                        $record->update(['status' => 'completed']);
+                        $record->completeClass($data, $record);
+                        Notification::make()->title('Class completed successfully')->success()->send();
+                    }),
 
-            // Optional: Kasih notifikasi
-            Notification::make()->title('Class completed successfully')->success()->send();
-        }),
-        ])
+                // 🔥 Action Cancel — Sekarang di posisi yang benar
+                Action::make('cancel_class')
+                    ->label('Cancel Class')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Cancel this class?')
+                    ->modalDescription('Status akan berubah menjadi cancelled dan tidak dapat dipulihkan.')
+                    ->visible(fn (ClassSchedule $record): bool => $record->status === 'scheduled')
+                    ->action(function (ClassSchedule $record, $livewire) {
+                        $record->update(['status' => 'cancelled']);
+                        $livewire->dispatch('refreshTabsAndTable');
+                    }),
+            ])
         ->bulkActions([
             Tables\Actions\DeleteBulkAction::make(),
         ]);

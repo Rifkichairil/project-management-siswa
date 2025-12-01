@@ -33,7 +33,7 @@ class EditStudent extends EditRecord
         ]);
 
         unset($data['name'], $data['email']);
-        $this->packageId = $data['package_id'] ?? null;
+        $this->packageId  = $data['package_id'] ?? null;
         $this->totalQouta = $data['total_quota'] ?? null;
 
         return $data;
@@ -56,16 +56,23 @@ class EditStudent extends EditRecord
 
     protected function afterSave(): void
     {
+        // dd($this->totalQouta);
         $student = $this->record;
         if ($this->packageId) {
             $package = Package::whereId($this->packageId)->first();
+            $result = match (true) {
+                $package->quota_classes === null => $this->totalQouta,
+                $package->quota_classes !== null => $package->quota_classes,
+                default                          => 0,
+            };
 
+            // dd($package->quota_classes !== null);
             // ⬇ PAKAI PROPERTY DI SINI
             StudentPackage::create([
                 'student_id'      => $student->id,
                 'package_id'      => $this->packageId, // 🔥 berhasil
-                'total_quota'     => $package->totalQouta ?? 0,
-                'remaining_quota' => $package->totalQouta ?? 0,
+                'total_quota'     => $result,
+                'remaining_quota' => $result,
                 'start_date'      => now(),
                 'end_date'        => now()->addMonth(),
             ]);

@@ -37,36 +37,36 @@ class ClassScheduleRelationManager extends RelationManager
                 TextColumn::make('status')->badge(),
             ])
            ->filters([
-    Tables\Filters\SelectFilter::make('schedule_range')
-        ->label('Filter Schedule')
-        ->options([
-            'daily' => 'Daily',
-            'weekly' => 'Weekly',
-            'monthly' => 'Monthly',
-        ])
-        ->query(function ($query, array $data) {
-            $value = $data['value'] ?? null;
+                Tables\Filters\SelectFilter::make('schedule_range')
+                    ->label('Filter Schedule')
+                    ->options([
+                        'daily' => 'Daily',
+                        'weekly' => 'Weekly',
+                        'monthly' => 'Monthly',
+                    ])
+                    ->query(function ($query, array $data) {
+                        $value = $data['value'] ?? null;
 
-            return match ($value) {
-                'daily' => $query->whereDate('date', today()),
+                        return match ($value) {
+                            'daily' => $query->whereDate('date', today()),
 
-                'weekly' => $query->whereBetween('date', [
-                    now()->startOfWeek(),
-                    now()->endOfWeek(),
-                ]),
+                            'weekly' => $query->whereBetween('date', [
+                                now()->startOfWeek(),
+                                now()->endOfWeek(),
+                            ]),
 
-                'monthly' => $query->whereMonth('date', now()->month),
+                            'monthly' => $query->whereMonth('date', now()->month),
 
-                default => $query, // ALL
-            };
-        }),
-])
+                            default => $query, // ALL
+                        };
+                    }),
+            ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                // Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                // Tables\Actions\ViewAction::make(),
+                // Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
