@@ -153,23 +153,33 @@ class ClassScheduleResource extends Resource
                                             timeStart: $get('time_start')
                                         ),
 
-                                        // Validasi 2: Pengecekan Overlapping Jadwal
-                                        fn (Get $get, string $operation) => new NoScheduleOverlap(
-                                            date: $get('date'),
+                                        // ⭐ VALIDASI GABUNGAN: Pengecekan Kesesuaian Tipe & Overlapping Jadwal (Ganti Validasi 2 & 3)
+                                        fn (Get $get, string $operation) => new \App\Rules\ComprehensiveClassScheduleValidation(
                                             teacherId: $get('teacher_id'),
                                             studentId: $get('student_id'),
                                             timeStart: $get('time_start'),
-                                            // Kirim ID jika sedang Edit untuk diabaikan
+                                            date: $get('date'),
+                                            // Kirim ID jika sedang Edit untuk diabaikan (ignoringId)
                                             ignoringId: $operation === 'edit' ? $get('id') : null
                                         ),
-                                        fn (Get $get, string $operation) => new \App\Rules\ValidTeacherSchedule(
-                                            teacherId: $get('teacher_id'),
-                                            studentId: $get('student_id'),
-                                            timeStart: $get('time_start'),
-                                            timeEnd: $get('time_end'),
-                                            date: $get('date'),
-                                            ignoringId: $operation === 'edit' ? $get('id') : null
-                                        )
+
+                                        // // Validasi 2: Pengecekan Overlapping Jadwal
+                                        // fn (Get $get, string $operation) => new NoScheduleOverlap(
+                                        //     date: $get('date'),
+                                        //     teacherId: $get('teacher_id'),
+                                        //     studentId: $get('student_id'),
+                                        //     timeStart: $get('time_start'),
+                                        //     // Kirim ID jika sedang Edit untuk diabaikan
+                                        //     ignoringId: $operation === 'edit' ? $get('id') : null
+                                        // ),
+                                        // fn (Get $get, string $operation) => new \App\Rules\ValidTeacherSchedule(
+                                        //     teacherId: $get('teacher_id'),
+                                        //     studentId: $get('student_id'),
+                                        //     timeStart: $get('time_start'),
+                                        //     timeEnd: $get('time_end'),
+                                        //     date: $get('date'),
+                                        //     ignoringId: $operation === 'edit' ? $get('id') : null
+                                        // )
                                     ]),
                                 Select::make('status')
                                     ->options([

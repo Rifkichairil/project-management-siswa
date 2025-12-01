@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()
                 ->onDelete('cascade');
-            $table->enum('teaching_type', ['private', 'group', 'both'])
-                ->default('private');
+            // $table->enum('teaching_type', ['private', 'group', 'both'])
+            //     ->default('private');
+            $table->json('teaching_type')->nullable();
             $table->string('expertise')->nullable();
             $table->string('curriculum')->nullable();
             $table->timestamps();

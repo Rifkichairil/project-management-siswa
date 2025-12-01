@@ -12,6 +12,10 @@ class Teacher extends Model
 
     protected $fillable = ['user_id','teaching_type','expertise','curriculum'];
 
+    protected $casts = [
+        'teaching_type' => 'array',
+    ];
+
     public function user()
     {
     return $this->belongsTo(User::class);

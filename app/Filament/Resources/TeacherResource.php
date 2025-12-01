@@ -64,8 +64,9 @@ class TeacherResource extends Resource
                                 'private' => 'Private Class',
                                 'group'   => 'Group Class'
                             ])
+                            ->multiple()        // <--- ini bikin bisa pilih lebih dari satu
                             ->required()
-                            ->native(false)
+                            ->native(false)    // biar tampilannya select2-like
                     ])->columns(2),
             ]);
     }

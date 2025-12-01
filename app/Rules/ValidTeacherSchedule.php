@@ -10,7 +10,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class ValidTeacherSchedule implements ValidationRule
 {
-     protected int $teacherId;
+    protected int $teacherId;
     protected int $studentId;
     protected string $timeStart;
     protected string $timeEnd;
@@ -38,7 +38,7 @@ class ValidTeacherSchedule implements ValidationRule
         }
 
         $packageType = $student->activePackage->package->type; // quota, monthly, group
-        dd($student->activePackage->package->type, $teacher->teaching_type);
+        // dd($student->activePackage->package->type, $teacher->teaching_type);
         // 1️⃣ Cek teacher type vs package type
         if ($teacher->teaching_type === 'private' && $packageType === 'group') {
             $fail("Guru ini hanya bisa mengajar private.");
@@ -67,7 +67,11 @@ class ValidTeacherSchedule implements ValidationRule
         $existingSchedules = $query->get();
 
         foreach ($existingSchedules as $schedule) {
-            $existingPackageType = $schedule->student->package->type;
+            $existingPackageType = $schedule->student->activePackage->package->type;
+            $existingTeacherId = $schedule->teacher_id;
+            dd($schedule->student,$schedule->student->activePackage->package, $schedule->teacher_id, $schedule->teacher->teaching_type);
+            // dd($schedule->student->activePackage->package->type);
+
 
             // Private slot: blok semua overlapping (private & group)
             if (in_array($existingPackageType, ['quota','monthly']) || in_array($packageType, ['quota','monthly'])) {
@@ -75,9 +79,25 @@ class ValidTeacherSchedule implements ValidationRule
                 return;
             }
 
-            // Group slot: bisa sharing hanya jika package group
+            // 2️⃣ Group slot: bisa sharing hanya jika:
+            // - existing schedule = group
+            // - student package = group
+            // - teacher sama
             if ($existingPackageType === 'group' && $packageType === 'group') {
-                // Optional: cek kapasitas maksimum group di sini
+                if ($schedule->teacher_id !== $this->teacherId) {
+                    // beda guru → tidak boleh sharing
+                    $fail("Slot waktu grup bertabrakan dengan jadwal guru lain.");
+                    return;
+                }
+
+                // optional: cek jam overlapping jika mau batasi slot group
+                if (!($schedule->time_start === $this->timeStart && $schedule->time_end === $this->timeEnd)) {
+                    $fail("Slot waktu grup tidak cocok dengan jadwal guru.");
+                    return;
+                }
+
+                // kalau teacher sama dan jam sama → boleh masuk
+                // bisa cek kapasitas maksimum group di sini
             }
         }
     }

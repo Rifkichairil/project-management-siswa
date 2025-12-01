@@ -16,10 +16,14 @@ class TeacherSeeder extends Seeder
     {
         $faker = \Faker\Factory::create();
 
-        // Ambil semua user yang rolenya "teacher"
         $teachers = User::where('role', 'teacher')->get();
 
         foreach ($teachers as $user) {
+            // Tentukan apakah teacher mengajar kedua tipe atau salah satu saja
+            $teaching_type = $faker->boolean(30)
+                ? ['private', 'group']   // 30% guru ngajar keduanya
+                : [$faker->randomElement(['private', 'group'])]; // 70% hanya satu tipe
+
             Teacher::create([
                 'user_id' => $user->id,
                 'expertise'  => $faker->randomElement([
@@ -33,7 +37,9 @@ class TeacherSeeder extends Seeder
                     'IB',
                     'Kurikulum Merdeka'
                 ]),
+                'teaching_type' => $teaching_type,
             ]);
         }
     }
+
 }
