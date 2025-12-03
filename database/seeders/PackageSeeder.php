@@ -37,6 +37,12 @@ class PackageSeeder extends Seeder
                 'type' => 'monthly',
                 'quota_classes' => null,
                 'price' => 300000,
+            ],
+            [
+                'name' => 'Package Group',
+                'type' => 'group',
+                'quota_classes' => null,
+                'price' => 300000,
             ]
         ];
 
