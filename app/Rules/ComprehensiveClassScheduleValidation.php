@@ -4,6 +4,7 @@ namespace App\Rules;
 
 use App\Models\ClassSchedule;
 use App\Models\Student;
+use App\Models\Subject;
 use App\Models\Teacher;
 use Carbon\Carbon;
 use Closure;
@@ -20,14 +21,16 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
     protected int $studentId;
     protected string $timeStart;
     protected string $date;
+    protected int $subject;
     protected ?int $ignoringId;
 
-    public function __construct(int $teacherId, int $studentId, string $timeStart, string $date, ?int $ignoringId = null)
+    public function __construct(int $teacherId, int $studentId, string $timeStart, string $date, int $subject, ?int $ignoringId = null)
     {
         $this->teacherId  = $teacherId;
         $this->studentId  = $studentId;
         $this->timeStart  = $timeStart;
         $this->date       = $date;
+        $this->subject    = $subject;
         $this->ignoringId = $ignoringId;
     }
 
@@ -42,6 +45,7 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
         // 1. Ambil Data Esensial
         $teacher = Teacher::find($this->teacherId);
         $student = Student::with(['activePackage.package'])->whereId($this->studentId)->first();
+        $subject = Subject::whereId($this->subject)->first();
 
         if (!$teacher || !$student) {
             $fail("Guru atau murid tidak ditemukan.");
@@ -87,6 +91,7 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
             ->where(function ($q) use ($timeEnd, $timeStart) {
                 // Logika Overlapping Waktu: (New Start < Existing End) AND (New End > Existing Start)
                 $q->where('time_start', '<', $timeEnd)
+
                   ->where('time_end', '>', $timeStart);
             })
             ->when($this->ignoringId, function ($query, $id) {
@@ -98,10 +103,12 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
         // --- ANALISIS JADWAL YANG OVERLAPPING ---
 
         foreach ($existingSchedules as $schedule) {
+
             $existingPackageType = $schedule->student->activePackage->package->type ?? null;
             $isOverlapOnTeacher = ($schedule->teacher_id == $this->teacherId);
             $isOverlapOnStudent = ($schedule->student_id == $this->studentId);
 
+            // dd($existingPackageType, $isOverlapOnStudent, $isOverlapOnTeacher, $packageType);
             // 1. Cek Konflik Sisi SISWA
             if ($isOverlapOnStudent) {
                  $fail("Konflik jadwal: Siswa sudah memiliki kelas lain pada waktu ini.");
@@ -124,13 +131,30 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
                 if ($existingPackageType === 'group' && $packageType === 'group') {
                     // dd($existingPackageType, $packageType);
 
+
+                    // Cek apakah waktu dan subjek SAMA PERSIS
+                    $isTimeMatch    = ($schedule->time_start === $timeStart && $schedule->time_end === $timeEnd);
+                    $isSubjectMatch = ($schedule->subject->name === $subject->name); // Asumsi $this->subject sudah berisi string subjek
+
                     // Student Group hanya bisa bergabung jika waktu kelas SAMA PERSIS.
-                    if (!($schedule->time_start === $timeStart && $schedule->time_end === $timeEnd)) {
-                        dd($schedule->time_start === $timeStart , $schedule->time_end === $timeEnd);
-                        dd(!($schedule->time_start === $timeStart && $schedule->time_end === $timeEnd));
-                        $fail("VR 3 GAGAL: Student Group harus bergabung ke jadwal Group yang SAMA PERSIS waktunya dengan kelas yang sudah ada.");
-                        return;
+                    // dd($schedule->time_start , $timeStart , $schedule->time_end , $timeEnd);
+                    // dd($isTimeMatch && $isSubjectMatch, $isTimeMatch , $isSubjectMatch, $schedule->time_start , $timeStart, $schedule->time_end , $timeEnd, $schedule->subject->name  , $subject->name );
+                    // dd(!($schedule->time_start === $timeStart && $schedule->time_end === $timeEnd));
+                    // Jika WAKTU SAMA dan SUBJEK SAMA:
+                    if ($isTimeMatch && $isSubjectMatch) {
+                        // Kondisi BERGABUNG. Izinkan dan lanjutkan ke jadwal lain (jika ada).
+                        continue;
                     }
+
+                    // Jika tidak lolos kondisi BERGABUNG, itu berarti ada konflik.
+                    // Konflik ini bisa terjadi karena:
+                    // 1. Waktu berbeda (walau overlapping), ATAU
+                    // 2. Subjek berbeda (walau waktu sama)
+
+                    // Karena ini adalah Group Class dan terjadi overlapping, dan siswa TIDAK bergabung ke kelas yang sama persis,
+                    // maka pendaftaran harus DITOLAK.
+                    $fail("Konflik Group Class: Guru sedang mengajar jadwal Group lain yang berbeda subjek atau waktu. Siswa Group harus bergabung ke jadwal yang SAMA PERSIS (Waktu & Subjek) yang sudah ada.");
+                    return;
                 }
             }
         }

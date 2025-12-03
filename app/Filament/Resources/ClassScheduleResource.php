@@ -130,8 +130,10 @@ class ClassScheduleResource extends Resource
                                 // Kolom Time Start:
                                 TimePicker::make('time_start')
                                     ->label('Time Start')
+                                    ->timezone('Asia/Jakarta')
                                     ->native(false)
                                     ->seconds(false)
+                                    ->dehydrateStateUsing(fn (string $state): string => Carbon::parse($state)->format('H:i'))
                                     ->format('H:i')
                                     ->displayFormat('H:i')
                                     ->required(),
@@ -159,6 +161,7 @@ class ClassScheduleResource extends Resource
                                             studentId: $get('student_id'),
                                             timeStart: $get('time_start'),
                                             date: $get('date'),
+                                            subject: $get('subject_id'), // ⭐ Tambahkan parameter subject
                                             // Kirim ID jika sedang Edit untuk diabaikan (ignoringId)
                                             ignoringId: $operation === 'edit' ? $get('id') : null
                                         ),

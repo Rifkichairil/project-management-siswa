@@ -15,6 +15,13 @@ class ClassSchedule extends Model
 
     protected $fillable = ['student_id','teacher_id', 'subject_id','date','time_start','time_end','status'];
 
+    // protected $casts = [
+    //     // Ini memastikan Laravel memperlakukan kolom sebagai tanggal/waktu,
+    //     // sehingga konversi timezone otomatis (UTC <-> Asia/Jakarta) terjadi saat diambil.
+    //     'date'       => 'date', // Hanya tanggal
+    //     'time_start' => 'time', // Hanya waktu
+    //     'time_end'   => 'time', // Hanya waktu
+    // ];
     // --- Logika Event (Di dalam booted()) ---
     protected static function booted()
     {

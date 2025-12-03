@@ -15,6 +15,9 @@ class CreateStudent extends CreateRecord
 {
     protected static string $resource = StudentResource::class;
     protected $packageId;
+    protected $totalQouta;
+
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         DB::beginTransaction();
@@ -31,7 +34,9 @@ class CreateStudent extends CreateRecord
             $data['user_id'] = $user->id;
 
             // simpan package ke property AGAR BISA DIPAKAI di afterCreate()
-            $this->packageId = $data['package_id'] ?? null;
+            $this->packageId  = $data['package_id'] ?? null;
+            $this->totalQouta = $data['total_quota'] ?? null;
+
 
             // buang field yang tidak perlu masuk table students
             unset($data['name'], $data['email'], $data['password']);
@@ -50,12 +55,18 @@ class CreateStudent extends CreateRecord
         // record Student sudah ke-create otomatis oleh Filament
         $student = $this->record;
         $package = Package::whereId($this->packageId)->first();
+        $result = match (true) {
+                $package->quota_classes === null => $this->totalQouta,
+                $package->quota_classes !== null => $package->quota_classes,
+                default                          => 0,
+            };
+
         // ⬇ PAKAI PROPERTY DI SINI
         StudentPackage::create([
             'student_id'      => $student->id,
             'package_id'      => $this->packageId, // 🔥 berhasil
-            'total_quota'     => $package->quota_classes ?? 0,
-            'remaining_quota' => $package->quota_classes ?? 0,
+            'total_quota'     => $result ?? 0,
+            'remaining_quota' => $result ?? 0,
             'start_date'      => now(),
             'end_date'        => now()->addMonth(),
         ]);
