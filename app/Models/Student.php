@@ -11,7 +11,7 @@ class Student extends Model
     /** @use HasFactory<\Database\Factories\StudentFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id','school','grade','payment_status', 'parent_name','parent_contact'];
+    protected $fillable = ['user_id','dob','school','grade','payment_status', 'parent_name','parent_contact'];
 
     public function user()
     {

@@ -50,8 +50,12 @@ class StudentResource extends Resource
                         //     ->hidden(fn ($livewire) => $livewire instanceof Pages\EditStudent)
                         //     ->visibleOn('create') // ⬅⬅⬅ penting!
                         //     ->maxLength(255),
+                        Forms\Components\DatePicker::make('dob')
+                            ->label('Tanggal Lahir') // Label yang akan muncul di form
+                            ->required()            // Opsional: Jika wajib diisi
+                            ->displayFormat('d/m/Y'), // Opsional: Format tampilan di form
 
-                    ])->columns(2), // <<<<<<<<<< GRID 2 KOLOM
+                    ])->columns(3), // <<<<<<<<<< GRID 2 KOLOM
 
                 // student fields
                 Forms\Components\Section::make('Student Details')
@@ -80,6 +84,7 @@ class StudentResource extends Resource
                             ->required()
                             ->default('unpaid')
                             ->native(false),
+
                     ])->columns(2),
                       // ⬇️ Tambahan ini paling penting
                 Forms\Components\Section::make('First Package Assignment')
@@ -116,6 +121,11 @@ class StudentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')->label('Name')->searchable(),
+                Tables\Columns\TextColumn::make('dob')
+                    ->label('Tanggal Lahir') // Mengganti label kolom
+                    ->date('m F Y')          // Memformat output data sebagai tanggal
+                    ->searchable()           // Memungkinkan pencarian
+                    ->sortable(),            // Memungkinkan pengurutan
                 Tables\Columns\TextColumn::make('school')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('grade')
