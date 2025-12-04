@@ -152,7 +152,8 @@ class ClassScheduleResource extends Resource
                                         // Validasi 1: Pengecekan Kuota
                                         fn (Get $get) => new CheckStudentQuota(
                                             studentId: $get('student_id'),
-                                            timeStart: $get('time_start')
+                                            timeStart: $get('time_start'),
+                                            scheduleId: $get('scheduleId'),
                                         ),
 
                                         // ⭐ VALIDASI GABUNGAN: Pengecekan Kesesuaian Tipe & Overlapping Jadwal (Ganti Validasi 2 & 3)
@@ -166,33 +167,7 @@ class ClassScheduleResource extends Resource
                                             ignoringId: $operation === 'edit' ? $get('id') : null
                                         ),
 
-                                        // // Validasi 2: Pengecekan Overlapping Jadwal
-                                        // fn (Get $get, string $operation) => new NoScheduleOverlap(
-                                        //     date: $get('date'),
-                                        //     teacherId: $get('teacher_id'),
-                                        //     studentId: $get('student_id'),
-                                        //     timeStart: $get('time_start'),
-                                        //     // Kirim ID jika sedang Edit untuk diabaikan
-                                        //     ignoringId: $operation === 'edit' ? $get('id') : null
-                                        // ),
-                                        // fn (Get $get, string $operation) => new \App\Rules\ValidTeacherSchedule(
-                                        //     teacherId: $get('teacher_id'),
-                                        //     studentId: $get('student_id'),
-                                        //     timeStart: $get('time_start'),
-                                        //     timeEnd: $get('time_end'),
-                                        //     date: $get('date'),
-                                        //     ignoringId: $operation === 'edit' ? $get('id') : null
-                                        // )
                                     ]),
-                                // Select::make('status')
-                                //     ->options([
-                                //         'scheduled' => 'Scheduled',
-                                //         'completed' => 'Completed',
-                                //         'cancelled' => 'Cancelled',
-                                //     ])
-                                //     ->required()
-                                //     ->reactive()
-                                //     ->hiddenOn('edit'),
                                 ]),
                     ]),
             ]);

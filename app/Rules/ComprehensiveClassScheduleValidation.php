@@ -52,6 +52,12 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
             return;
         }
 
+        // --- VALIDASI BARU: Cek Paket Siswa Aktif ---
+        // Jika tidak ada activePackage, munculkan error.
+        if (! $student->activePackage) {
+            $fail("Siswa tidak memiliki paket kelas yang aktif.");
+            return;
+        }
         // Tipe paket siswa: 'quota', 'monthly', 'group' (Dianggap sebagai Private: quota/monthly, Group: group)
         $packageType = $student->activePackage->package->type ?? null;
 

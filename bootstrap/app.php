@@ -15,4 +15,17 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->withSchedule(function (Illuminate\Console\Scheduling\Schedule $schedule) {
+        $schedule->command('app:log-every-minute')
+                ->runInBackground()
+                ->everyMinute();
+        $schedule->command('app:deactivate-expired-packages')
+                ->runInBackground()
+                ->everyMinute();                         // Berjalan pada hari pertama bulan (tanggal 1), pukul 00:00 (tengah malam).
+                // Ini memastikan pengecekan dilakukan setelah semua hari di bulan sebelumnya terlewati.
+            //  ->monthlyOn(1, '00:00')
+            //  // Penting: Sesuaikan zona waktu (timezone) agar cocok dengan server Anda.
+            //  ->timezone('Asia/Jakarta');
+    })
+    ->create();

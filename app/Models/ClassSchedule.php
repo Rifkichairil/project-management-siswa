@@ -25,42 +25,82 @@ class ClassSchedule extends Model
     // --- Logika Event (Di dalam booted()) ---
     protected static function booted()
     {
-        static::updated(function ($model) {
-            $model->status = 'scheduled';
+        // 1. DEDUCTION: Pengurangan Kuota saat Jadwal BARU dibuat
+        static::created(function (ClassSchedule $schedule) {
+            self::deductInitialQuota($schedule);
         });
 
-        // Event UPDATED: Dijalankan setelah data berhasil disimpan dan ada perubahan.
+        // 2. REFUND: Pengembalian Kuota saat Jadwal DIUBAH menjadi 'canceled'
         static::updated(function (ClassSchedule $schedule) {
-
-            $new = $schedule->getChanges(); // setelah update
-
-            // Logika: Potong kuota hanya jika status BARU adalah 'completed'
-            // DAN status LAMA BUKAN 'completed' (Mencegah pemotongan ganda)
-            if ($new['status'] === 'completed' && $schedule->getOriginal('status') !== 'completed') {
-
-                // 1. Hitung unit kuota yang akan dipotong
-                $quotaMinutesUsed       = $schedule->getQuotaMinutesUsed();
-                $quotaUnitsToDecrement  = $quotaMinutesUsed / 60; // Konversi ke unit/jam (misal: 120 menit -> 2 unit)
-
-                // 2. Cari paket siswa (asumsi ambil kuota terbesar/terbaru)
-                $package = StudentPackage::where('student_id', $schedule->student_id)
-                                         ->whereNotNull('remaining_quota')
-                                         ->where('remaining_quota', '>', 0)
-                                         ->orderByDesc('remaining_quota')
-                                         ->first();
-
-                // 3. Aksi pada Kuota
-                if ($package && $quotaUnitsToDecrement > 0) {
-
-                    // A. Mengurangi remaining_quota (wajib)
-                    $package->decrement('remaining_quota', $quotaUnitsToDecrement);
-
-                    // B. MENAMBAHKAN used_quota (Permintaan baru)
-                    // Kita asumsikan used_quota juga disimpan dalam satuan Unit/Jam
-                    $package->increment('used_quota', $quotaUnitsToDecrement);
-                }
-            }
+            self::handleCancellationQuotaReturn($schedule);
         });
+    }
+
+    private static function calculateQuotaUnits(string $timeStart, string $timeEnd): int
+    {
+        $durationInMinutes = Carbon::parse($timeStart)->diffInMinutes(Carbon::parse($timeEnd));
+        if ($durationInMinutes <= 0) {
+            return 0;
+        }
+        // Pembulatan ke unit terdekat (kelipatan 60 menit)
+        return (int) ceil($durationInMinutes / 60);
+    }
+
+    /**
+     * Melakukan pengurangan kuota awal saat jadwal dibuat.
+     */
+    protected static function handleCancellationQuotaReturn(ClassSchedule $schedule): void
+    {
+        // 1. Hitung Quota yang Dibutuhkan
+        $quotaUnitsNeeded = self::calculateQuotaUnits($schedule->time_start, $schedule->time_end);
+
+        if ($schedule->isDirty('status') && $schedule->status === 'cancelled') {
+            // 1. Hitung kuota yang terpakai sebelum dibatalkan (menggunakan getOriginal)
+            $oldUnits = self::calculateQuotaUnits(
+                $schedule->getOriginal('time_start'),
+                $schedule->getOriginal('time_end')
+            );
+
+            // 2. Ambil paket siswa
+            $package = StudentPackage::where('student_id', $schedule->student_id)->first();
+
+            // 3. Kembalikan kuota
+            $package->remaining_quota += $oldUnits;
+            $package->used_quota -= $oldUnits;
+            $package->save();
+        }
+    }
+    /**
+     * Melakukan pengurangan kuota awal saat jadwal dibuat.
+     */
+    protected static function deductInitialQuota(ClassSchedule $schedule): void
+    {
+        // 1. Hitung Quota yang Dibutuhkan
+        $quotaUnitsNeeded = self::calculateQuotaUnits($schedule->time_start, $schedule->time_end);
+
+        if ($quotaUnitsNeeded === 0) {
+            return;
+        }
+
+        // 2. Ambil Paket Siswa Aktif (dengan sisa kuota terbesar)
+        // Kita berasumsi validasi (VR) sudah memastikan kuota ini cukup (> 0).
+        $package = StudentPackage::where('student_id', $schedule->student_id)
+            ->whereNotNull('remaining_quota')
+            ->where('remaining_quota', '>=', $quotaUnitsNeeded) // Hanya ambil jika kuota mencukupi
+            ->orderByDesc('remaining_quota')
+            ->first();
+            if (!$package) {
+                // Walaupun sudah divalidasi, ini adalah safety check terakhir
+                // (Mungkin perlu throw exception jika paket tidak ditemukan atau kuota kurang,
+                // karena ini menunjukkan kegagalan pada VR).
+                return;
+            }
+
+            // 3. Kurangi dan Simpan
+        $package->remaining_quota = $package->remaining_quota - $quotaUnitsNeeded;
+        $package->used_quota      = $package->used_quota + $quotaUnitsNeeded;
+        // dd($quotaUnitsNeeded, ($package->remaining_quota - $quotaUnitsNeeded), $package->used_quota);
+        $package->save();
     }
 
     public function student()
@@ -86,8 +126,8 @@ class ClassSchedule extends Model
     public function getQuotaMinutesUsed(): int
     {
         // Hitung durasi aktual dalam menit
-        $startTime = Carbon::parse($this->time_start);
-        $endTime = Carbon::parse($this->time_end);
+        $startTime               = Carbon::parse($this->time_start);
+        $endTime                 = Carbon::parse($this->time_end);
         $actualDurationInMinutes = $startTime->diffInMinutes($endTime);
 
         if ($actualDurationInMinutes <= 0) {

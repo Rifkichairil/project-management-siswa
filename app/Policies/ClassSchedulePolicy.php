@@ -29,7 +29,7 @@ class ClassSchedulePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -37,7 +37,7 @@ class ClassSchedulePolicy
      */
     public function update(User $user, ClassSchedule $classSchedule): bool
     {
-        return false;
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -45,7 +45,7 @@ class ClassSchedulePolicy
      */
     public function delete(User $user, ClassSchedule $classSchedule): bool
     {
-        return false;
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -53,7 +53,7 @@ class ClassSchedulePolicy
      */
     public function restore(User $user, ClassSchedule $classSchedule): bool
     {
-        return false;
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 
     /**
@@ -61,6 +61,6 @@ class ClassSchedulePolicy
      */
     public function forceDelete(User $user, ClassSchedule $classSchedule): bool
     {
-        return false;
+        return $user->role === 'superadmin' ||  $user->role === 'admin';
     }
 }
