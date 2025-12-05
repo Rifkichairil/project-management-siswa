@@ -22,10 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->everyMinute();
         $schedule->command('app:deactivate-expired-packages')
                 ->runInBackground()
-                ->everyMinute();                         // Berjalan pada hari pertama bulan (tanggal 1), pukul 00:00 (tengah malam).
-                // Ini memastikan pengecekan dilakukan setelah semua hari di bulan sebelumnya terlewati.
-            //  ->monthlyOn(1, '00:00')
-            //  // Penting: Sesuaikan zona waktu (timezone) agar cocok dengan server Anda.
-            //  ->timezone('Asia/Jakarta');
+                ->daily()
+                ->timezone('Asia/Jakarta');                        // Berjalan pada hari pertama bulan (tanggal 1), pukul 00:00 (tengah malam).
     })
     ->create();
