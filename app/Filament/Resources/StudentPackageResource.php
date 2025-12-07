@@ -17,8 +17,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Validation\ValidationException;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Grid;
 
 class StudentPackageResource extends Resource
 {
@@ -30,6 +30,7 @@ class StudentPackageResource extends Resource
 
 
 
+
     public static function form(Form $form): Form
     {
 
@@ -38,93 +39,127 @@ class StudentPackageResource extends Resource
 
         return $form
             ->schema([
-                Select::make('student_id')
-                    ->label('Student')
-                    ->relationship('student.user', 'name')
-                    ->searchable()
-                    ->required()
-                    ->options(function () {
-                        return \App\Models\Student::with('user')
-                            ->orderBy(
-                                \App\Models\User::select('name')
-                                    ->whereColumn('users.id', 'students.user_id')
-                                    ->limit(1)
-                            )
-                            ->limit(5)
-                            ->get()
-                            ->mapWithKeys(fn ($student) => [
-                                $student->id => $student->user->name,
-                            ]);
-                    }),
+                Grid::make(2)
+                    ->schema([
+                        Select::make('student_id')
+                            ->label('Student')
+                            ->searchable()
+                            ->required()
+                            ->disabled(fn ($record) => filled($record))
+                            ->dehydrated(fn ($record) => $record === null)
+                            ->options(function ($record) {
+                                // Ambil 5 student pertama
+                                $students = \App\Models\Student::with('user')
+                                    ->orderBy(
+                                        \App\Models\User::select('name')
+                                            ->whereColumn('users.id', 'students.user_id')
+                                            ->limit(1)
+                                    )
+                                    ->limit(5)
+                                    ->get();
 
-                Select::make('package_id')
-                    ->relationship('package', 'name')
-                    ->required()
-                    ->searchable()
-                    ->reactive()
-                    ->options(function () {
-                            return \App\Models\Package::limit(5)
-                                ->get()
-                                ->mapWithKeys(fn ($package) => [
-                                    $package->id => $package->name,
-                                ]);
-                        })
+                                // Pastikan student yang sedang diedit tetap muncul
+                                if ($record && $record->student) {
+                                    $students->push($record->student->load('user'));
+                                }
 
-                    // ← JALAN SAAT EDIT (hydrate)
-                    ->afterStateHydrated(function ($state, callable $set) {
-                        if (!$state) return;
-                        $package = \App\Models\Package::find($state);
-                        if (!$package) return;
-
-                        // Jika package type monthly → tampilkan total_quota
-                        $set('show_total_quota', $package->type === 'monthly');
-                    })
-                    ->afterStateUpdated(function ($state, callable $set, $get) {
-                        $package = \App\Models\Package::find($state);
-                        if (!$package) return;
-
-                        if ($package->type === 'monthly') {
-                            // Jika start_date belum ada, set sekarang
-                            $startDate = $get('start_date') ?: now()->format('Y-m-d');
-                            $set('start_date', $startDate);
-                            // end_date = start_date + 1 bulan
-                            $set('end_date', Carbon::parse($startDate)->addMonth()->format('Y-m-d'));
-                            // tampilkan total_quota
-                            $set('show_total_quota', true);
-                        } else {
-                            // Hide total_quota untuk type selain monthly
-                            $set('show_total_quota', false);
-                            // Bisa set end_date default untuk quota (misal sama dengan start_date)
-                            $set('end_date', null);
-                        }
-                    }),
-
-                DatePicker::make('start_date')
-                    ->required()
-                    ->reactive()
-                    ->afterStateHydrated(function ($state, callable $set) {
-                        if (!$state) {
-                            $set('start_date', now()->format('Y-m-d')); // default hari ini
-                        }
-                    })
-                    ->displayFormat('m/d/Y'),
-
-                DatePicker::make('end_date')
-                    ->reactive()
-                    ->displayFormat('m/d/Y')
-                    ->disabled()
-                    ->dehydrated(true),
-
-                TextInput::make('total_quota')
-                    ->numeric()
-                    ->minValue(0)
-                    ->hidden(fn ($get) => !$get('show_total_quota')),
+                                return $students
+                                    ->unique('id')
+                                    ->mapWithKeys(fn ($student) => [
+                                        $student->id => $student->user->name,
+                                    ]);
+                            }),
 
 
-                TextInput::make('remaining_quota')
-                    ->numeric()
-                    ->minValue(0)
-                    ->hidden(),
+                        Select::make('package_id')
+                            ->relationship('package', 'name')
+                            ->required()
+                            ->searchable()
+                            ->reactive()
+                            ->disabled(function ($context, callable $get) {
+                                // Jika mode BUKAN 'edit' (misal: 'create'), field ini AKTIF (return false)
+                                if ($context !== 'edit') {
+                                    return false;
+                                }
+
+                                // Jika mode 'edit', field ini DISABLED kecuali checkbox 'change_type_package' bernilai TRUE
+                                return !$get('change_type_package');
+                            })
+                            ->options(function () {
+                                    return \App\Models\Package::limit(5)
+                                        ->get()
+                                        ->mapWithKeys(fn ($package) => [
+                                            $package->id => $package->name,
+                                        ]);
+                                })
+
+                            // ← JALAN SAAT EDIT (hydrate)
+                            ->afterStateHydrated(function ($state, callable $set) {
+                                if (!$state) return;
+                                $package = \App\Models\Package::find($state);
+                                if (!$package) return;
+
+                                // Jika package type monthly → tampilkan total_quota
+                                $set('show_total_quota', $package->type === 'monthly');
+                            })
+                            ->afterStateUpdated(function ($state, callable $set, $get) {
+                                $package = \App\Models\Package::find($state);
+                                if (!$package) return;
+
+                                if ($package->type === 'monthly') {
+                                    // Jika start_date belum ada, set sekarang
+                                    $startDate = $get('start_date') ?: now()->format('Y-m-d');
+                                    $set('start_date', $startDate);
+                                    // end_date = start_date + 1 bulan
+                                    $set('end_date', Carbon::parse($startDate)->addMonth()->format('Y-m-d'));
+                                    // tampilkan total_quota
+                                    $set('show_total_quota', true);
+                                } else {
+                                    // Hide total_quota untuk type selain monthly
+                                    $set('show_total_quota', false);
+                                    // Bisa set end_date default untuk quota (misal sama dengan start_date)
+                                    $set('end_date', null);
+                                }
+                            }),
+                    ]),
+
+                Grid::make(2)
+                    ->schema([
+                        DatePicker::make('start_date')
+                            ->required()
+                            ->reactive()
+                            ->afterStateHydrated(function ($state, callable $set) {
+                                if (!$state) {
+                                    $set('start_date', now()->format('Y-m-d')); // default hari ini
+                                }
+                            })
+                            ->displayFormat('m/d/Y'),
+
+                        DatePicker::make('end_date')
+                            ->reactive()
+                            ->displayFormat('m/d/Y')
+                            ->disabled()
+                            ->dehydrated(true),
+                    ]),
+                Grid::make(2)
+                    ->schema([
+                        TextInput::make('total_quota')
+                            ->numeric()
+                            ->minValue(0)
+                            ->hidden(fn ($get) => !$get('show_total_quota')),
+
+                        TextInput::make('remaining_quota')
+                            ->numeric()
+                            ->minValue(0)
+                            ->hidden(),
+                    ]),
+
+                Checkbox::make('change_type_package')
+                    ->label('Change Type Package')
+                    ->default(false)
+                    ->reactive() // 🛑 KUNCI KOREKSI 2: Jadikan reactive agar bisa memicu perubahan pada field lain
+                    ->visibleOn('edit'),
+
             ]);
     }
 
@@ -222,11 +257,21 @@ class StudentPackageResource extends Resource
                     ->falseLabel('Only Ended'),
             ])
             ->actions([
-                // Tables\Actions\EditAction::make(),
                 Tables\Actions\EditAction::make()
                     ->visible(fn ($record) => $record->status === 'active')
                     ->modalWidth('5xl')
+                    ->after(function (StudentPackage $record, array $data) {
 
+                        $isChangeRequested = $data['change_type_package'] ?? false;
+                        // Gunakan $isChangeRequested untuk logika, JANGAN gunakan $record->is_change_type_package_checked
+                        if ($isChangeRequested === true) {
+                            // Memicu logika perubahan
+                            StudentPackage::changeTypePackage($record);
+
+                            // Simpan perubahan kuota (jika belum disimpan di changeTypePackage)
+                            $record->save();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),

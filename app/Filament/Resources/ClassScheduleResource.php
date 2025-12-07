@@ -122,6 +122,18 @@ class ClassScheduleResource extends Resource
                             ->searchable()
                             ->preload() // preload data agar langsung tampil
                             ->required(),
+                        Select::make('mode')
+                            ->label('Mode')
+                            ->options([
+                                'online' => 'Online',
+                                'onsite' => 'Onsite',
+                                'home_visit' => 'Home Visit',
+                            ])
+                            ->default('online')  // ← default value
+                            ->searchable() // bisa di-search
+                            ->preload()    // langsung load semua option
+                            ->required(),
+
                         DatePicker::make('date')
                             ->default(now())
                             ->required(),
@@ -180,6 +192,21 @@ class ClassScheduleResource extends Resource
             TextColumn::make('student.user.name')->label('Student')->searchable(),
             TextColumn::make('teacher.user.name')->label('Teacher')->searchable(),
             TextColumn::make('subject.name')->label('Subject')->searchable(),
+            TextColumn::make('mode')
+                ->label('Mode')
+                ->badge()
+                ->colors([
+                    'success' => 'online',
+                    'primary' => 'onsite',
+                    'warning' => 'home_visit',
+                ])
+                ->formatStateUsing(fn ($state) => [
+                    'online' => 'Online',
+                    'onsite' => 'Onsite',
+                    'home_visit' => 'Home Visit',
+                ][$state])
+                ->searchable(),
+
             TextColumn::make('date')->date(),
             TextColumn::make('time_start')->label('Start'),
             TextColumn::make('time_end')->label('End'),
@@ -264,8 +291,6 @@ class ClassScheduleResource extends Resource
     {
         return [
             'index' => Pages\ListClassSchedules::route('/'),
-            // 'create' => Pages\CreateClassSchedule::route('/create'),
-            // 'edit' => Pages\EditClassSchedule::route('/{record}/edit'),
         ];
     }
 

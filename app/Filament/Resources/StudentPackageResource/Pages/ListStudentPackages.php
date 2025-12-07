@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class ListStudentPackages extends ListRecords
 {
-    protected static string $resource = StudentPackageResource::class;
+    protected static string $resource       = StudentPackageResource::class;
     protected static ?string $tabsAlignment = 'end'; // start = kiri, center = tengah, end = kanan
 
     protected function getHeaderActions(): array
@@ -23,6 +23,7 @@ class ListStudentPackages extends ListRecords
             CreateAction::make()
                 // Opsi tambahan (opsional):
                 ->modalWidth('5xl')
+                ->label('Create or Topup Student Package')
         ];
     }
 

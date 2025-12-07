@@ -110,6 +110,12 @@ class ComprehensiveClassScheduleValidation implements ValidationRule
 
         foreach ($existingSchedules as $schedule) {
 
+            // ⭐ MODIFIKASI: Hanya proses jadwal yang berstatus 'scheduled'
+            if ($schedule->status !== 'scheduled') {
+                continue;
+            }
+            // ⭐ Jadwal yang statusnya BUKAN 'scheduled' akan dilewati
+
             $existingPackageType = $schedule->student->activePackage->package->type ?? null;
             $isOverlapOnTeacher = ($schedule->teacher_id == $this->teacherId);
             $isOverlapOnStudent = ($schedule->student_id == $this->studentId);

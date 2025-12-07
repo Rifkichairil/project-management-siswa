@@ -83,41 +83,5 @@ class CheckStudentQuota implements ValidationRule
         if ($quotaUnitsNeeded > $remainingUnits) {
             $fail("Failed! The class duration requires {$quotaUnitsNeeded} unit(s). Effective remaining quota is only {$effectiveRemainingUnits} unit(s) (Original: {$remainingUnits} units).");
         }
-
-        // $newTimeStart   = $this->timeStart;
-        // $newTimeEnd     = $value;
-        // $studentId      = $this->studentId;
-
-        // // 1. Hitung Durasi Kelas Baru (dalam menit)
-        // $actualDurationInMinutes = Carbon::parse($newTimeStart)->diffInMinutes(Carbon::parse($newTimeEnd));
-
-        // // 2. HITUNG KUOTA YANG DIGUNAKAN (Pembulatan ke kelipatan 60 menit)
-        // if ($actualDurationInMinutes <= 0) {
-        //     return;
-        // }
-        // $quotaMinutesUsed = (int) ceil($actualDurationInMinutes / 60) * 60;
-
-        // // 3. Ambil Kuota Siswa (ambil unit kuota dari DB)
-        // $package = StudentPackage::where('student_id', $studentId)
-        // ->whereNotNull('remaining_quota')
-        // ->where('remaining_quota', '>', 0)
-        // ->orderByDesc('remaining_quota')
-        // ->first();
-
-        // if (!$package) {
-        //     $fail('The student does not have an active package with remaining quota.');
-        //     return;
-        // }
-
-        // $remainingUnits = $package->remaining_quota;
-
-        // // **KONVERSI:** Unit kuota (misal: 3) dikalikan 60 menit
-        // $remainingQuotaInMinutes = $remainingUnits * 60;
-        // dd($quotaMinutesUsed > $remainingQuotaInMinutes, $quotaMinutesUsed, $remainingQuotaInMinutes);
-
-        // // 4. Bandingkan (Menggunakan $remainingQuotaInMinutes)
-        // if ($quotaMinutesUsed > $remainingQuotaInMinutes) {
-        //     $fail("Failed! The class duration ({$actualDurationInMinutes} minutes) will consume {$quotaMinutesUsed} minutes (rounded). Remaining quota is only {$remainingQuotaInMinutes} minutes (from {$remainingUnits} quota unit(s)).");
-        // }
     }
 }

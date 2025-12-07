@@ -5,6 +5,8 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\DB;
 
 class StudentPackage extends Model
 {
@@ -13,7 +15,7 @@ class StudentPackage extends Model
 
     protected $fillable = ['student_id','package_id','start_date','end_date','total_quota','used_quota','remaining_quota', 'status' , 'old_package_to_deactivate'];
     protected $old_package_to_deactivated; // bukan attribute database
-
+    protected $skipQuotaRecalculation = false; // bukan attribute database
 
     protected static function booted()
     {
@@ -35,19 +37,13 @@ class StudentPackage extends Model
             } else {
                 // Logika Penggabungan Kuota (Upsize/Downsize)
 
-                // 1. Ambil Sisa Kuota Lama
                 $oldRemainingQuota = $activeOldPackage->remaining_quota;
 
-                // 2. Hitung Kuota Baru (Selalu Ditambah)
-                // New Remaining = Total Baru + Sisa Lama
                 $model->total_quota     = $package->quota_classes;
                 $model->remaining_quota = $model->total_quota + $oldRemainingQuota;
                 $model->end_date        = Carbon::parse($model->start_date)->addMonth();
 
-                // 3. Nonaktifkan Paket Lama (Update status)
-                // Ini harus dilakukan setelah paket baru berhasil dibuat/disimpan
-                // Agar tidak terjadi race condition, kita tandai paket lama untuk di-update.
-                // Namun, karena kita ada di event 'creating', kita tunda ke event 'created'.
+                $model->old_package_to_deactivate  = $activeOldPackage->id;
                 $model->old_package_to_deactivated = $activeOldPackage;
 
                 // Set status package baru menjadi ACTIVE
@@ -75,17 +71,45 @@ class StudentPackage extends Model
 
         // --- 2. LOGIKA SAAT DATA DIUBAH (HANYA KOREKSI/PENGURANGAN KUOTA) ---
         static::updating(function (StudentPackage $package) {
-            // Logika untuk memastikan remaining quota terupdate jika total/used diubah
-            // Ini biasanya terjadi saat admin mengoreksi data secara manual.
 
-            // Jika Used Quota berubah, hitung ulang Remaining Quota
-            if ($package->isDirty('used_quota') || $package->isDirty('total_quota')) {
-                 $package->remaining_quota = $package->total_quota - $package->used_quota;
+            // ini untuk cancel || create
+            if ($package->skip_quota_recalculation_cancel === true || $package->skip_quota_recalculation_create === true) {
+                return;
             }
-        });
-    }
-                // dd($originalRemaining, $originalQuota, $package->quota_classes, min($oldRemaining + $newQuota, $newQuota), ($oldRemaining - $newQuota));
 
+            // // skip_quota_recalculation == true biar ga kena disini
+            if ($package->isDirty('start_date')) {
+                $package->end_date        = Carbon::parse($package->start_date)->addMonth();
+            }
+
+        });
+
+
+    }
+    protected $appends = [
+        // ... properti appended lainnya
+        'skip_quota_recalculation_cancel', // ✅ Gunakan nama snake_case untuk Mutator/Accessor
+        'skip_quota_recalculation_create', // ✅ Gunakan nama snake_case untuk Mutator/Accessor
+    ];
+
+    public function setSkipQuotaRecalculationCancelAttribute(bool $value)
+    {
+        $this->attributes['skip_quota_recalculation_cancel'] = $value;
+    }
+
+    public function getSkipQuotaRecalculationCancelAttribute(): bool
+    {
+        return (bool) ($this->attributes['skip_quota_recalculation_cancel'] ?? false);
+    }
+    public function setSkipQuotaRecalculationCreateAttribute(bool $value)
+    {
+        $this->attributes['skip_quota_recalculation_create'] = $value;
+    }
+
+    public function getSkipQuotaRecalculationCreateAttribute(): bool
+    {
+        return (bool) ($this->attributes['skip_quota_recalculation_create'] ?? false);
+    }
 
     public function student()
     {
@@ -102,71 +126,21 @@ class StudentPackage extends Model
         return $this->hasMany(Payment::class);
     }
 
-    // protected static function boot()
-    // {
-    //     parent::boot();
+    public static function changeTypePackage(StudentPackage $data)
+    {
+        return DB::transaction(function () use ($data) {
 
-    //     static::saving(function ($model) {
+            // get data package id
+            $package = Package::whereId($data->package_id)->first();
+            $result = match (true) {
+                $package->quota_classes === null => $data->total_quota,
+                $package->quota_classes !== null => $package->quota_classes,
+                default                          => 0,
+            };
 
-    //         $isUpdate = $model->exists;
-
-    //         // Ambil data lama jika update
-    //         $old = $isUpdate ? StudentPackage::find($model->id) : null;
-
-    //         // Ambil type package sekarang
-    //         $package = Package::find($model->package_id);
-    //         if (!$package) return;
-
-    //         $packageType = $package->type; // 'monthly' atau 'quota'
-
-
-    //         // -------------------------------------------------------
-    //         // ===============  CREATE LOGIC  ========================
-    //         // -------------------------------------------------------
-    //         if (!$isUpdate) {
-    //             $model->remaining_quota = $model->total_quota ?? 0;
-    //             return;
-    //         }
-
-
-    //         // -------------------------------------------------------
-    //         // ===============  UPDATE LOGIC  ========================
-    //         // -------------------------------------------------------
-
-    //         $packageChanged     = $model->isDirty('package_id');
-    //         $startDateChanged   = $model->isDirty('start_date');
-
-
-    //         // ====== Jika PACKAGE berubah ======
-    //         if ($packageChanged) {
-
-    //             // Jika ganti paket → reset remaining seperti paket baru
-    //             $model->remaining_quota = $model->total_quota ?? 0;
-    //             return;
-    //         }
-
-
-    //         // ====== Jika TYPE = QUOTA → remaining tidak berubah ======
-    //         if ($packageType === 'quota') {
-    //             // Tidak boleh mengubah remaining quota
-    //             // $model->remaining_quota = 100 ;
-    //             $oldRemaining = $old->remaining_quota ?? 0;
-    //             $model->remaining_quota = $oldRemaining + $model->total_quota;
-    //             return;
-    //         } else {
-    //             if ($model->start_date <= $old->start_date) {
-    //                 $model->remaining_quota = $model->total_quota + $old->remaining_quota;
-    //                 return;
-    //             }
-
-    //             // Jika start_date naik = perpanjangan bulan
-    //             $model->remaining_quota = ($old->remaining_quota ?? 0) + ($model->total_quota ?? 0);
-    //             return;
-    //         }
-
-
-
-    //         $model->remaining_quota = $old->remaining_quota;
-    //     });
-    // }
+            $data->total_quota      = $result;
+            $data->remaining_quota  = $result - $data->used_quota;
+            return $data; // Mengembalikan objek Package yang telah diupdate
+        });
+    }
 }
