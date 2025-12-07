@@ -48,7 +48,10 @@ class AdminPanelProvider extends PanelProvider
                 StudentsLowQuota::class,
 
             ])
-            ->brandName('Saung Belajar')
+            ->brandName(config('app.env') === 'local'
+                ? 'Private and Group Tutoring'
+                : 'Saung Belajar'
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
