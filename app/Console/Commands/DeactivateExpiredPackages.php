@@ -5,8 +5,9 @@ namespace App\Console\Commands;
 use App\Models\StudentPackage;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
-class DeactivateExpiredPackages extends Command
+class  DeactivateExpiredPackages extends Command
 {
     /**
      * The name and signature of the console command.
@@ -27,6 +28,8 @@ class DeactivateExpiredPackages extends Command
      */
     public function handle()
     {
+        Log::info('Scheduler DeactivateExpiredPackages tiap menit: ' . now());
+
         // 1. Ambil tanggal hari ini (pukul 00:00:00)
         $today = Carbon::today();
 

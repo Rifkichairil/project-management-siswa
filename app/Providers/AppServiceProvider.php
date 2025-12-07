@@ -32,12 +32,8 @@ class AppServiceProvider extends ServiceProvider
 
                 // === PENJADWALAN UNTUK AKHIR BULAN ===
                 $schedule->command(DeactivateExpiredPackages::class)
-                        ->everyMinute(); // <-- DIUBAH!
-                         // Berjalan pada hari pertama bulan (tanggal 1), pukul 00:00 (tengah malam).
-                         // Ini memastikan pengecekan dilakukan setelah semua hari di bulan sebelumnya terlewati.
-                        //  ->monthlyOn(1, '00:00')
-                        //  // Penting: Sesuaikan zona waktu (timezone) agar cocok dengan server Anda.
-                        //  ->timezone('Asia/Jakarta');
+                        ->daily()
+                        ->timezone('Asia/Jakarta');
                 $schedule->command(LogEveryMinute::class)->everyMinute();
             });
         }
