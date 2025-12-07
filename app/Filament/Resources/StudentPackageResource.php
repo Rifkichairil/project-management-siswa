@@ -261,16 +261,12 @@ class StudentPackageResource extends Resource
                     ->visible(fn ($record) => $record->status === 'active')
                     ->modalWidth('5xl')
                     ->after(function (StudentPackage $record, array $data) {
-
                         $isChangeRequested = $data['change_type_package'] ?? false;
-                        // Gunakan $isChangeRequested untuk logika, JANGAN gunakan $record->is_change_type_package_checked
                         if ($isChangeRequested === true) {
-                            // Memicu logika perubahan
                             StudentPackage::changeTypePackage($record);
-
-                            // Simpan perubahan kuota (jika belum disimpan di changeTypePackage)
-                            $record->save();
                         }
+                        $record->end_date = Carbon::parse($record->start_date)->addMonth();
+                        $record->save();
                     }),
             ])
             ->bulkActions([

@@ -74,6 +74,7 @@ class StudentPackage extends Model
 
             // ini untuk cancel || create
             if ($package->skip_quota_recalculation_cancel === true || $package->skip_quota_recalculation_create === true) {
+                $package->end_date        = Carbon::parse($package->start_date)->addMonth();
                 return;
             }
 
@@ -126,11 +127,37 @@ class StudentPackage extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public static function changeTypePaasdckage(StudentPackage $data)
+    {
+        return DB::transaction(function () use ($data) {
+
+            // Asumsi: Instance StudentPackage $data memiliki properti student_id
+            $studentId = $data->student_id;
+
+            $lastPackage = StudentPackage::where('student_id', $studentId)
+                ->where('status', 'inactive')
+                ->latest() // Mengambil yang paling baru
+                ->first(); // ⭐ HARUS ADA: Mengambil hasilnya
+
+            $package = Package::whereId($data->package_id)->first();
+            $result = match (true) {
+                $package->quota_classes === null => $data->total_quota,
+                $package->quota_classes !== null => $package->quota_classes,
+                default                          => 0,
+            };
+
+            $data->total_quota      = $result;
+            $data->remaining_quota  = $result - $lastPackage->used_quota;
+            return $data; // Mengembalikan objek Package yang telah diupdate
+
+        });
+    }
+
     public static function changeTypePackage(StudentPackage $data)
     {
         return DB::transaction(function () use ($data) {
 
-            // get data package id
+
             $package = Package::whereId($data->package_id)->first();
             $result = match (true) {
                 $package->quota_classes === null => $data->total_quota,
